@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Древо технологий — Галактика</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #fff; }
+  #canvas { display: block; cursor: grab; }
+  #canvas.dragging { cursor: grabbing; }
+
+  .ui-panel {
+    position: fixed; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+    border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.06); z-index: 10;
+  }
+
+  #searchBox {
+    top: 16px; left: 50%; transform: translateX(-50%);
+    padding: 10px 16px; width: 340px;
+  }
+  #searchBox input {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-size: 14px; color: #222;
+  }
+  #searchBox input::placeholder { color: #999; }
+
+  #legendBtn {
+    top: 16px; left: 16px; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: bold; cursor: pointer;
+    background: #222; color: #fff; border-radius: 12px;
+    transition: transform 0.15s;
+  }
+  #legendBtn:hover { transform: scale(1.08); }
+
+  #legendPanel {
+    top: 70px; left: 16px; padding: 16px 20px;
+    display: none; min-width: 260px;
+  }
+  #legendPanel.show { display: block; }
+  #legendPanel h3 { font-size: 13px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 13px; color: #333; }
+  .legend-line { width: 32px; height: 4px; border-radius: 2px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+  #ioPanel {
+    bottom: 16px; left: 16px; padding: 10px 14px;
+    display: flex; gap: 8px;
+  }
+  .io-btn {
+    padding: 8px 14px; border: none; border-radius: 10px;
+    background: #222; color: #fff; font-size: 12px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .io-btn:hover { background: #444; }
+
+  /* Панель технологии — позиционируется рядом с нодой */
+  #techPanel {
+      position: fixed;
+      width: 340px;
+      padding: 0;
+      display: none;
+      z-index: 20;
+      opacity: 0;
+      transform: scale(0.85) translateY(8px);
+      transition: opacity 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      overflow: hidden;
+      
+      /* Добавленные стили */
+      background-color: #ffffff;
+      border: 1px solid #d1d5db; /* или #cccccc, #e5e7eb */
+      border-radius: 12px; /* или 16px, 8px */
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); /* опционально: тень для красоты */
+  }
+  #techPanel.show {
+    display: block;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  #techPanel .panel-inner {
+    padding: 22px 24px 20px;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+  #techPanel .panel-header {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px;
+  }
+  #techPanel .panel-dot {
+    width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; margin-top: 3px;
+  }
+  #techPanel .panel-title-area { flex: 1; }
+  #techPanel h2 { font-size: 19px; color: #111; line-height: 1.25; font-weight: 700; }
+  #techPanel .tree-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; color: #fff; margin-top: 6px; font-weight: 600;
+  }
+  #techPanel .close-btn {
+    position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+    border: none; background: #f0f0f0; border-radius: 50%; cursor: pointer;
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    color: #666; transition: background 0.15s;
+  }
+  #techPanel .close-btn:hover { background: #e0e0e0; }
+  #techPanel .section { margin: 16px 0; }
+  #techPanel .section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: #888; margin-bottom: 5px; font-weight: 700;
+  }
+  #techPanel .section-text { font-size: 14px; color: #333; line-height: 1.55; }
+  #techPanel .missing-section { margin: 16px 0; padding: 12px 14px; background: #fff5f5; border-radius: 10px; border-left: 3px solid #e74c3c; }
+  #techPanel .missing-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #e74c3c; margin-bottom: 6px; font-weight: 700; }
+  #techPanel .missing-list { list-style: none; padding: 0; }
+  #techPanel .missing-list li { font-size: 13px; color: #555; padding: 2px 0; padding-left: 14px; position: relative; }
+  #techPanel .missing-list li::before { content: '✕'; position: absolute; left: 0; color: #e74c3c; font-size: 11px; }
+  #techPanel .research-btn {
+    margin-top: 18px; width: 100%; padding: 14px;
+    border: none; border-radius: 14px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  #techPanel .research-btn.available { background: #e74c3c; color: #fff; }
+  #techPanel .research-btn.available:hover { background: #c0392b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
+  #techPanel .research-btn.locked { background: #f0f0f0; color: #999; cursor: not-allowed; }
+  #techPanel .research-btn.done { background: #2ecc71; color: #fff; cursor: default; }
+
+  #searchResults {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.06); max-height: 300px; overflow-y: auto;
+    display: none; z-index: 20; min-width: 340px;
+  }
+  .search-result-item {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; color: #333;
+    border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px;
+  }
+  .search-result-item:hover { background: #f8f8f8; }
+  .search-result-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .search-result-item .score { margin-left: auto; font-size: 11px; color: #999; }
+
+  #fileInput { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="searchBox" class="ui-panel">
+  <input type="text" id="searchInput" placeholder="🔍 Поиск технологий..." autocomplete="off">
+</div>
+
+<div id="searchResults"></div>
+
+<div id="legendBtn" class="ui-panel">?</div>
+
+<div id="legendPanel" class="ui-panel">
+  <h3>Типы связей</h3>
+  <div class="legend-item"><div class="legend-line" style="background:#3498db"></div> Прямая связь (развитие технологии)</div>
+  <div class="legend-item"><div class="legend-line" style="background:#e74c3c"></div> Непрямая связь (требуется из другого дерева)</div>
+  <div class="legend-item"><div class="legend-line" style="background:#2ecc71"></div> Косвенная связь (авто-разблокировка)</div>
+  <h3 style="margin-top:14px">Состояния</h3>
+  <div class="legend-item"><div class="legend-dot" style="background:#ccc; border: 2px dashed #999"></div> Заблокирована</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3498db"></div> Доступна для исследования</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2ecc71; box-shadow: 0 0 8px #2ecc71"></div> Исследована</div>
+</div>
+
+<div id="ioPanel" class="ui-panel">
+  <button class="io-btn" onclick="exportSave()">💾 Экспорт</button>
+  <button class="io-btn" onclick="document.getElementById('fileInput').click()">📂 Импорт</button>
+  <input type="file" id="fileInput" accept=".json" onchange="importSave(event)">
+</div>
+
+<div id="techPanel">
+  <button class="close-btn" onclick="closeTechPanel()">✕</button>
+  <div class="panel-inner">
+    <div class="panel-header">
+      <div class="panel-dot" id="tpDot"></div>
+      <div class="panel-title-area">
+        <h2 id="tpName"></h2>
+        <div id="tpTag" class="tree-tag"></div>
+      </div>
+    </div>
+    <div class="section"><div class="section-title">Что это</div><div class="section-text" id="tpWhat"></div></div>
+    <div class="section"><div class="section-title">Как выглядит</div><div class="section-text" id="tpAppearance"></div></div>
+    <div class="section"><div class="section-title">Что даёт</div><div class="section-text" id="tpGives"></div></div>
+    <div id="tpMissingWrap" class="missing-section" style="display:none">
+      <div class="missing-title">Не хватает</div>
+      <ul class="missing-list" id="tpMissingList"></ul>
+    </div>
+    <button class="research-btn" id="tpResearchBtn">Исследовать</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ДАННЫЕ ТЕХНОЛОГИЙ
+// ============================================================
+const TREES = {
+  space:    { name: "Космическая инженерия",   color: "#3498db" },
+  weapons:  { name: "Энергетика и вооружение", color: "#e74c3c" },
+  bio:      { name: "Биотехнологии",           color: "#2c9644" },
+  ai:       { name: "ИИ и кибернетика",        color: "#9b59b6" },
+  materials:{ name: "Материаловедение",        color: "#f39c12" }
+};
+
+const LEVEL_ROMAN = ["I","II","III","IV","V","VI"];
+
+const TECHS = [
+  // ===== КОСМИЧЕСКАЯ ИНЖЕНЕРИЯ =====
+  { id:"sp_nav",       name:"Базовая навигация",          tree:"space",    level:0, deps:[],
+    desc:{ what:"Фундаментальная система определения положения корабля в пространстве.", appearance:"Голографический дисплей с картой звёздного неба и векторами движения.", gives:"Открывает доступ ко всем космическим технологиям." }},
+  { id:"sp_eng1",      name:"Ионный двигатель I",         tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Первый практический космический двигатель на ионной тяге.", appearance:"Цилиндрический модуль с синим свечением выхлопа.", gives:"Позволяет строить корабли для межпланетных перелётов." }},
+  { id:"sp_eng2",      name:"Ионный двигатель II",        tree:"space",    level:2, deps:[{id:"sp_eng1",type:"direct"}],
+    desc:{ what:"Усиленная версия ионного двигателя с удвоенной тягой.", appearance:"Сдвоенные реактивные кольца с интенсивным голубым пламенем.", gives:"Увеличивает скорость кораблей на 40%." }},
+  { id:"sp_warp1",     name:"Варп-двигатель I",           tree:"space",    level:3, deps:[{id:"sp_eng2",type:"direct"},{id:"wp_energy2",type:"indirect"}],
+    desc:{ what:"Двигатель, искривляющий пространство для сверхсветового движения.", appearance:"Массивное кольцо вокруг кормы корабля, искажающее свет вокруг.", gives:"Открывает межзвёздные перелёты." }},
+  { id:"sp_warp2",     name:"Варп-двигатель II",          tree:"space",    level:4, deps:[{id:"sp_warp1",type:"direct"}],
+    desc:{ what:"Улучшенный варп-двигатель с повышенной стабильностью пузыря.", appearance:"Двойное кольцо с пульсирующей энергией между ними.", gives:"Увеличивает дальность варп-прыжков в 3 раза." }},
+  { id:"sp_hyper",     name:"Гипердвигатель",             tree:"space",    level:5, deps:[{id:"sp_warp2",type:"direct"},{id:"mt_quantum",type:"indirect"}],
+    desc:{ what:"Двигатель, использующий гиперпространство для мгновенных прыжков.", appearance:"Сферический модуль с вращающимися кольцами и белой вспышкой при активации.", gives:"Мгновенные прыжки между звёздными системами." }},
+  { id:"sp_hull1",     name:"Корпус корабля I",           tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Базовая конструкция космического корабля.", appearance:"Металлический каркас с герметичными отсеками.", gives:"Позволяет строить фрегаты и корветы." }},
+  { id:"sp_hull2",     name:"Корпус корабля II",          tree:"space",    level:2, deps:[{id:"sp_hull1",type:"direct"}],
+    desc:{ what:"Усиленный корпус для боевых кораблей среднего класса.", appearance:"Многослойная броня с внутренним каркасом из композитов.", gives:"Позволяет строить эсминцы и лёгкие крейсера." }},
+  { id:"sp_hull3",     name:"Корпус корабля III",         tree:"space",    level:3, deps:[{id:"sp_hull2",type:"direct"},{id:"mt_alloy2",type:"indirect"}],
+    desc:{ what:"Тяжёлый бронированный корпус для линкоров.", appearance:"Массивная многоуровневая конструкция с усиленными переборками.", gives:"Позволяет строить линкоры и тяжёлые крейсера." }},
+  { id:"sp_life",      name:"Системы жизнеобеспечения",   tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Комплекс систем поддержания жизни экипажа.", appearance:"Набор модулей с зелёными индикаторами и циркуляционными трубами.", gives:"Позволяет длительные космические миссии." }},
+  { id:"sp_grav",      name:"Гравитационный генератор",   tree:"space",    level:3, deps:[{id:"sp_life",type:"direct"},{id:"ai_neuro2",type:"indirect"}],
+    desc:{ what:"Устройство создания искусственной гравитации.", appearance:"Вращающийся диск в центре корабля с голубым свечением.", gives:"Комфортные условия для экипажа, бонус к эффективности." }},
+  { id:"sp_yard",      name:"Космическая верфь",          tree:"space",    level:4, deps:[{id:"sp_hull3",type:"direct"},{id:"mt_factory2",type:"indirect"}],
+    desc:{ what:"Орбитальная станция для строительства крупных кораблей.", appearance:"Гигантская конструкция с доками, кранами и стапелями.", gives:"Позволяет строить дредноуты и станции." }},
+
+  // ===== ЭНЕРГЕТИКА И ВООРУЖЕНИЕ =====
+  { id:"wp_energy1",   name:"Энергоячейка I",             tree:"weapons",  level:0, deps:[],
+    desc:{ what:"Базовый источник энергии для корабельных систем.", appearance:"Кубический модуль с янтарным свечением внутри.", gives:"Открывает доступ к вооружению." }},
+  { id:"wp_energy2",   name:"Энергоячейка II",            tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Усиленный реактор с двойной мощностью.", appearance:"Цилиндрический реактор с пульсирующим оранжевым ядром.", gives:"Питание для продвинутого оружия и щитов." }},
+  { id:"wp_energy3",   name:"Энергоячейка III",           tree:"weapons",  level:2, deps:[{id:"wp_energy2",type:"direct"}],
+    desc:{ what:"Термоядерный реактор нового поколения.", appearance:"Сферическая камера удержания плазмы с магнитными кольцами.", gives:"Максимальная энерговооружённость корабля." }},
+  { id:"wp_laser1",    name:"Лазерная турель I",          tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Базовое лазерное оружие точечного поражения.", appearance:"Вращающаяся турель с излучателем и системой охлаждения.", gives:"Эффективна против лёгких целей." }},
+  { id:"wp_laser2",    name:"Лазерная турель II",         tree:"weapons",  level:2, deps:[{id:"wp_laser1",type:"direct"}],
+    desc:{ what:"Мощный лазер с повышенной пробивной способностью.", appearance:"Двойной излучатель с усиленной системой фокусировки.", gives:"Урон увеличен на 60%." }},
+  { id:"wp_plasma1",   name:"Плазменная пушка I",         tree:"weapons",  level:2, deps:[{id:"wp_energy2",type:"direct"}],
+    desc:{ what:"Орудие, стреляющее сгустками перегретой плазмы.", appearance:"Массивный ствол с магнитными ускорителями и зелёным свечением.", gives:"Высокий урон по броне." }},
+  { id:"wp_plasma2",   name:"Плазменная пушка II",        tree:"weapons",  level:3, deps:[{id:"wp_plasma1",type:"direct"}],
+    desc:{ what:"Тяжёлая плазменная артиллерия.", appearance:"Двойной ствол с системой перезарядки и охлаждающими контурами.", gives:"Критический урон по крупным кораблям." }},
+  { id:"wp_kinetic",   name:"Кинетическое орудие",        tree:"weapons",  level:2, deps:[{id:"wp_energy1",type:"direct"},{id:"mt_alloy1",type:"indirect"}],
+    desc:{ what:"Рельсотрон, разгоняющий снаряды до гиперскоростей.", appearance:"Длинный ствол с рельсами-ускорителями и системой подачи снарядов.", gives:"Игнорирует энергетические щиты." }},
+  { id:"wp_shield1",   name:"Щиты I",                     tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Базовый энергетический щит корабля.", appearance:"Полупрозрачная голубая сфера вокруг корабля.", gives:"Поглощает 30% входящего урона." }},
+  { id:"wp_shield2",   name:"Щиты II",                    tree:"weapons",  level:2, deps:[{id:"wp_shield1",type:"direct"},{id:"mt_nano1",type:"indirect"}],
+    desc:{ what:"Усиленный многослойный щит.", appearance:"Двойная сфера с переливающимися слоями энергии.", gives:"Поглощает 55% урона." }},
+  { id:"wp_shield3",   name:"Щиты III",                   tree:"weapons",  level:3, deps:[{id:"wp_shield2",type:"direct"}],
+    desc:{ what:"Максимальная защита энергетическим барьером.", appearance:"Плотная сияющая сфера с шестиугольным паттерном.", gives:"Поглощает 75% урона." }},
+  { id:"wp_pds",       name:"Точечная защита",            tree:"weapons",  level:2, deps:[{id:"wp_laser1",type:"direct"},{id:"ai_drone",type:"cosvennaya"}],
+    desc:{ what:"Автоматическая система перехвата ракет и снарядов.", appearance:"Массив мелких турелей по всему корпусу корабля.", gives:"Автоматически сбивает ракеты и торпеды." }},
+
+  // ===== БИОТЕХНОЛОГИИ =====
+  { id:"bio_genetics", name:"Базовая генетика",           tree:"bio",      level:0, deps:[],
+    desc:{ what:"Фундаментальные знания о ДНК и генной инженерии.", appearance:"Лаборатория с секвенаторами и голографическими моделями ДНК.", gives:"Открывает доступ к биотехнологиям." }},
+  { id:"bio_therapy",  name:"Генная терапия",             tree:"bio",      level:1, deps:[{id:"bio_genetics",type:"direct"}],
+    desc:{ what:"Лечение и улучшение организма на генетическом уровне.", appearance:"Медицинский модуль с инъекторами и биосканерами.", gives:"Увеличивает здоровье экипажа на 25%." }},
+  { id:"bio_cryo",     name:"Криогенный сон",             tree:"bio",      level:1, deps:[{id:"bio_genetics",type:"direct"}],
+    desc:{ what:"Технология заморозки людей для длительных перелётов.", appearance:"Капсулы с прозрачными крышками и голубой жидкостью внутри.", gives:"Позволяет межзвёздные миссии без старения экипажа." }},
+  { id:"bio_bioeng1",  name:"Биоинженерия I",             tree:"bio",      level:2, deps:[{id:"bio_therapy",type:"direct"}],
+    desc:{ what:"Создание улучшенных организмов для различных задач.", appearance:"Биолаборатория с инкубаторами и генетическими принтерами.", gives:"Улучшенные культуры и рабочие организмы." }},
+  { id:"bio_bioeng2",  name:"Биоинженерия II",            tree:"bio",      level:3, deps:[{id:"bio_bioeng1",type:"direct"}],
+    desc:{ what:"Продвинутая генетическая модификация сложных организмов.", appearance:"Автоматизированный биокомплекс с нейронными интерфейсами.", gives:"Создание специализированных биоформ." }},
+  { id:"bio_immune",   name:"Адаптивная иммунная система",tree:"bio",      level:2, deps:[{id:"bio_therapy",type:"direct"}],
+    desc:{ what:"Искусственная иммунная система, адаптирующаяся к любым угрозам.", appearance:"Наноботы в крови, видимые как серебристая сеть под кожей.", gives:"Полная защита от биологического оружия." }},
+  { id:"bio_neuro1",   name:"Нейроинтерфейс I",           tree:"bio",      level:2, deps:[{id:"bio_genetics",type:"direct"},{id:"ai_ml",type:"indirect"}],
+    desc:{ what:"Прямое соединение мозга с компьютерными системами.", appearance:"Имплант у основания черепа с оптоволоконными нитями.", gives:"Управление кораблём силой мысли." }},
+  { id:"bio_neuro2",   name:"Нейроинтерфейс II",          tree:"bio",      level:3, deps:[{id:"bio_neuro1",type:"direct"}],
+    desc:{ what:"Полноценное слияние сознания с ИИ-системами.", appearance:"Нейронная сеть, покрывающая кору мозга, с внешним процессором.", gives:"Мгновенная реакция и обработка информации." }},
+  { id:"bio_clone",    name:"Клонирование",               tree:"bio",      level:3, deps:[{id:"bio_bioeng2",type:"direct"}],
+    desc:{ what:"Создание генетических копий организмов.", appearance:"Ряд биокапсул с растущими эмбрионами и питательной средой.", gives:"Быстрое пополнение экипажа и войск." }},
+  { id:"bio_synth",    name:"Синтетическая биология",     tree:"bio",      level:4, deps:[{id:"bio_bioeng2",type:"direct"},{id:"mt_nano2",type:"indirect"}],
+    desc:{ what:"Создание полностью искусственных организмов.", appearance:"Биореакторы с искусственными клетками и программируемой ДНК.", gives:"Организмы с заданными свойствами." }},
+  { id:"bio_bioship",  name:"Био-корабль",                tree:"bio",      level:5, deps:[{id:"bio_synth",type:"direct"},{id:"ai_neuro2",type:"indirect"}],
+    desc:{ what:"Живой корабль, выращенный из биоматериалов.", appearance:"Органическая структура с пульсирующими венами и био-мембраной вместо корпуса.", gives:"Самовосстанавливающийся корабль." }},
+  { id:"bio_hive",     name:"Коллективный разум",         tree:"bio",      level:5, deps:[{id:"bio_clone",type:"direct"},{id:"ai_network",type:"indirect"}],
+    desc:{ what:"Связь сознаний всех членов колонии в единую сеть.", appearance:"Нейронная сеть, соединяющая всех участников через био-релейные узлы.", gives:"Идеальная координация флота." }},
+
+  // ===== ИИ И КИБЕРНЕТИКА =====
+  { id:"ai_basic",     name:"Базовый ИИ",                 tree:"ai",       level:0, deps:[],
+    desc:{ what:"Простейший искусственный интеллект для автоматизации.", appearance:"Серверная стойка с мигающими индикаторами и голографическим ядром.", gives:"Открывает доступ к кибернетике." }},
+  { id:"ai_ml",        name:"Машинное обучение",          tree:"ai",       level:1, deps:[{id:"ai_basic",type:"direct"}],
+    desc:{ what:"Системы, способные обучаться на данных.", appearance:"Нейронная визуализация с узлами и связями, постоянно перестраивающаяся.", gives:"Улучшает все автоматизированные системы." }},
+  { id:"ai_neuro1",    name:"Нейросеть I",                tree:"ai",       level:2, deps:[{id:"ai_ml",type:"direct"}],
+    desc:{ what:"Первое поколение глубоких нейронных сетей.", appearance:"Трёхмерная структура из светящихся узлов и связей.", gives:"Распознавание образов и предсказание." }},
+  { id:"ai_neuro2",    name:"Нейросеть II",               tree:"ai",       level:3, deps:[{id:"ai_neuro1",type:"direct"}],
+    desc:{ what:"Продвинутая нейросеть с самообучением.", appearance:"Плотная светящаяся сфера из миллиардов связей.", gives:"Автономное принятие решений." }},
+  { id:"ai_drone",     name:"Автономный дрон",            tree:"ai",       level:2, deps:[{id:"ai_ml",type:"direct"},{id:"mt_alloy1",type:"indirect"}],
+    desc:{ what:"Беспилотный летательный аппарат с ИИ.", appearance:"Компактный дрон с камерами и манипуляторами.", gives:"Разведка и поддержка без экипажа." }},
+  { id:"ai_cyber1",    name:"Кибернетический имплант I",  tree:"ai",       level:2, deps:[{id:"ai_basic",type:"direct"},{id:"bio_neuro1",type:"indirect"}],
+    desc:{ what:"Базовые кибернетические улучшения тела.", appearance:"Металлические импланты с портами подключения под кожей.", gives:"Улучшенные рефлексы и сила." }},
+  { id:"ai_cyber2",    name:"Кибернетический имплант II", tree:"ai",       level:3, deps:[{id:"ai_cyber1",type:"direct"}],
+    desc:{ what:"Продвинутые кибернетические модификации.", appearance:"Полностью механические конечности и органы с ИИ-управлением.", gives:"Значительное улучшение всех характеристик." }},
+  { id:"ai_quantum",   name:"Квантовый компьютер",        tree:"ai",       level:3, deps:[{id:"ai_neuro2",type:"direct"},{id:"mt_quantum",type:"indirect"}],
+    desc:{ what:"Компьютер, использующий квантовые эффекты для вычислений.", appearance:"Криогенная установка с кубитами в центре, окружённая лазерами.", gives:"Экспоненциальный рост вычислительной мощности." }},
+  { id:"ai_network",   name:"Сетевой интеллект",          tree:"ai",       level:4, deps:[{id:"ai_neuro2",type:"direct"}],
+    desc:{ what:"Объединение множества ИИ в единую сеть.", appearance:"Глобальная сеть светящихся узлов, охватывающая всю цивилизацию.", gives:"Координация всех систем империи." }},
+  { id:"ai_singularity",name:"Сингулярность ИИ",          tree:"ai",       level:5, deps:[{id:"ai_quantum",type:"direct"},{id:"ai_network",type:"direct"}],
+    desc:{ what:"Момент, когда ИИ превосходит человеческий разум.", appearance:"Сфера чистой энергии, излучающая невыразимый свет.", gives:"Неограниченные вычислительные возможности." }},
+  { id:"ai_digital",   name:"Цифровое сознание",          tree:"ai",       level:5, deps:[{id:"ai_singularity",type:"direct"},{id:"bio_neuro2",type:"indirect"}],
+    desc:{ what:"Перенос сознания в цифровую форму.", appearance:"Голографическая проекция человека из световых частиц.", gives:"Бессмертие в цифровой форме." }},
+  { id:"ai_swarm",     name:"Рой дронов",                 tree:"ai",       level:4, deps:[{id:"ai_drone",type:"direct"},{id:"ai_network",type:"cosvennaya"}],
+    desc:{ what:"Тысячи дронов, действующих как единый организм.", appearance:"Облако мелких дронов, формирующих различные структуры.", gives:"Массированные автоматизированные атаки." }},
+
+  // ===== МАТЕРИАЛОВЕДЕНИЕ =====
+  { id:"mt_metallurgy",name:"Базовая металлургия",        tree:"materials",level:0, deps:[],
+    desc:{ what:"Основы обработки металлов и сплавов.", appearance:"Плавильные печи и кузнечные молоты нового поколения.", gives:"Открывает доступ к материаловедению." }},
+  { id:"mt_alloy1",    name:"Сплавы I",                   tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Улучшенные металлические сплавы для промышленности.", appearance:"Слитки с характерным блеском и маркировкой состава.", gives:"Улучшенная броня и конструкции." }},
+  { id:"mt_alloy2",    name:"Сплавы II",                  tree:"materials",level:2, deps:[{id:"mt_alloy1",type:"direct"}],
+    desc:{ what:"Высокопрочные композитные сплавы.", appearance:"Тёмные металлические пластины с видимой кристаллической структурой.", gives:"Броня для тяжёлых кораблей." }},
+  { id:"mt_nano1",     name:"Наноматериалы I",            tree:"materials",level:2, deps:[{id:"mt_alloy1",type:"direct"}],
+    desc:{ what:"Материалы, созданные на атомном уровне.", appearance:"Чёрная жидкость, меняющая форму по команде.", gives:"Улучшенные щиты и броня." }},
+  { id:"mt_nano2",     name:"Наноматериалы II",           tree:"materials",level:3, deps:[{id:"mt_nano1",type:"direct"}],
+    desc:{ what:"Программируемая наноматерия.", appearance:"Рой наноботов, формирующих любые структуры.", gives:"Самовосстанавливающиеся материалы." }},
+  { id:"mt_quantum",   name:"Квантовые материалы",        tree:"materials",level:3, deps:[{id:"mt_nano1",type:"direct"},{id:"ai_neuro1",type:"indirect"}],
+    desc:{ what:"Материалы с квантовыми свойствами.", appearance:"Полупрозрачные кристаллы, светящиеся изнутри.", gives:"Ключ к квантовым технологиям." }},
+  { id:"mt_factory1",  name:"Фабрика I",                  tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Базовое производственное предприятие.", appearance:"Автоматизированный завод с конвейерами и роботами.", gives:"Массовое производство." }},
+  { id:"mt_factory2",  name:"Фабрика II",                 tree:"materials",level:2, deps:[{id:"mt_factory1",type:"direct"}],
+    desc:{ what:"Продвинутое производство с ИИ-управлением.", appearance:"Полностью автоматизированный комплекс без людей внутри.", gives:"Ускоренное производство кораблей." }},
+  { id:"mt_automate",  name:"Автоматизация производства", tree:"materials",level:3, deps:[{id:"mt_factory2",type:"direct"},{id:"ai_ml",type:"indirect"}],
+    desc:{ what:"Полная автоматизация всех производственных процессов.", appearance:"Заводы, управляемые ИИ, работающие 24/7 без остановок.", gives:"Максимальная скорость производства." }},
+  { id:"mt_assembler", name:"Молекулярный ассемблер",     tree:"materials",level:4, deps:[{id:"mt_nano2",type:"direct"},{id:"mt_automate",type:"direct"}],
+    desc:{ what:"Устройство, собирающее объекты из атомов.", appearance:"Камера с манипуляторами атомарного уровня и голографическим проектором.", gives:"Создание чего угодно из сырья." }},
+  { id:"mt_mining1",   name:"Добыча ресурсов I",          tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Базовые технологии добычи полезных ископаемых.", appearance:"Буровые установки и добывающие дроны.", gives:"Доступ к ресурсам астероидов." }},
+  { id:"mt_mining2",   name:"Добыча ресурсов II",         tree:"materials",level:2, deps:[{id:"mt_mining1",type:"direct"}],
+    desc:{ what:"Продвинутая добыча, включая газовые гиганты.", appearance:"Орбитальные платформы и атмосферные сборщики.", gives:"Добыча на планетах и в атмосферах." }}
+];
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let nodes = [];
+let edges = [];
+let researched = new Set();
+let camera = { x: 0, y: 0, zoom: 1 };
+let draggingNode = null;
+let dragStart = { x:0, y:0 };
+let panning = false;
+let panStart = { x:0, y:0 };
+let cameraStart = { x:0, y:0 };
+let selectedNode = null;
+let animPhase = 0;
+let animStartTime = 0;
+let physicsRunning = true;
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initNodes() {
+  const treeKeys = Object.keys(TREES);
+  const centerX = W / 2;
+  const centerY = H / 2;
+  const radius = Math.min(W, H) * 0.32;
+
+  const treeCenters = {};
+  treeKeys.forEach((key, i) => {
+    const angle = (i / treeKeys.length) * Math.PI * 2 - Math.PI / 2;
+    treeCenters[key] = {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius
+    };
+  });
+
+  const grouped = {};
+  treeKeys.forEach(k => grouped[k] = {});
+  TECHS.forEach(t => {
+    if (!grouped[t.tree][t.level]) grouped[t.tree][t.level] = [];
+    grouped[t.tree][t.level].push(t);
+  });
+
+  TECHS.forEach(t => {
+    const tc = treeCenters[t.tree];
+    const levelNodes = grouped[t.tree][t.level] || [];
+    const idx = levelNodes.indexOf(t);
+    const count = levelNodes.length;
+    const levelRadius = 70 + t.level * 100;
+    const angle = (idx / count) * Math.PI * 2 + t.level * 0.4;
+    const x = tc.x + Math.cos(angle) * levelRadius;
+    const y = tc.y + Math.sin(angle) * levelRadius;
+
+    nodes.push({
+      id: t.id,
+      x: x, y: y,
+      vx: 0, vy: 0,
+      tree: t.tree,
+      level: t.level,
+      scale: 0,
+      targetScale: 1,
+      pulsePhase: 0,
+      pulseActive: false,
+      appearDelay: t.level * 0.55 + Math.random() * 0.3
+    });
+  });
+
+  TECHS.forEach(t => {
+    t.deps.forEach(d => {
+      edges.push({ from: d.id, to: t.id, type: d.type });
+    });
+  });
+
+  animStartTime = performance.now();
+}
+
+// ============================================================
+// ФИЗИКА
+// ============================================================
+function simulate(dt) {
+  if (!physicsRunning) return;
+
+  const REPULSION = 12000;
+  const SPRING = 0.012;
+  const SPRING_LEN = 160;
+  const CENTER_FORCE = 0.0006;
+  const DAMPING = 0.87;
+  const JITTER = 0.12;
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      let force = REPULSION / (dist * dist);
+      let fx = (dx / dist) * force;
+      let fy = (dy / dist) * force;
+      a.vx -= fx * dt; a.vy -= fy * dt;
+      b.vx += fx * dt; b.vy += fy * dt;
+    }
+  }
+
+  edges.forEach(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    let force = (dist - SPRING_LEN) * SPRING;
+    let fx = (dx / dist) * force;
+    let fy = (dy / dist) * force;
+    a.vx += fx * dt; a.vy += fy * dt;
+    b.vx -= fx * dt; b.vy -= fy * dt;
+  });
+
+  const treeKeys = Object.keys(TREES);
+  const cx = W/2, cy = H/2;
+  const radius = Math.min(W,H) * 0.32;
+  treeKeys.forEach((key, i) => {
+    const angle = (i / treeKeys.length) * Math.PI * 2 - Math.PI/2;
+    const tcx = cx + Math.cos(angle) * radius;
+    const tcy = cy + Math.sin(angle) * radius;
+    nodes.filter(n => n.tree === key).forEach(n => {
+      n.vx += (tcx - n.x) * CENTER_FORCE * dt;
+      n.vy += (tcy - n.y) * CENTER_FORCE * dt;
+      if (animPhase >= 1) {
+        n.vx += (Math.random() - 0.5) * JITTER * dt;
+        n.vy += (Math.random() - 0.5) * JITTER * dt;
+      }
+    });
+  });
+
+  nodes.forEach(n => {
+    if (n === draggingNode) return;
+    n.vx *= DAMPING;
+    n.vy *= DAMPING;
+    n.x += n.vx * dt;
+    n.y += n.vy * dt;
+  });
+
+  const elapsed = (performance.now() - animStartTime) / 1000;
+  animPhase = Math.min(1, elapsed / 4);
+
+  nodes.forEach(n => {
+    if (elapsed > n.appearDelay) {
+      n.scale += (n.targetScale - n.scale) * 0.1;
+    }
+  });
+
+  nodes.forEach(n => {
+    if (n.pulseActive) {
+      n.pulsePhase += dt * 3;
+      if (n.pulsePhase > Math.PI * 2) {
+        n.pulseActive = false;
+        n.pulsePhase = 0;
+      }
+    }
+  });
+}
+
+// ============================================================
+// РЕНДЕРИНГ
+// ============================================================
+function drawGrid() {
+  ctx.save();
+  const spacing = 40 * camera.zoom;
+  const offsetX = ((camera.x * camera.zoom) % spacing + spacing) % spacing;
+  const offsetY = ((camera.y * camera.zoom) % spacing + spacing) % spacing;
+  for (let x = offsetX; x < W; x += spacing) {
+    for (let y = offsetY; y < H; y += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.07)';
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx + camera.x) * camera.zoom + W/2,
+    y: (wy + camera.y) * camera.zoom + H/2
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - W/2) / camera.zoom - camera.x,
+    y: (sy - H/2) / camera.zoom - camera.y
+  };
+}
+
+function isNodeAvailable(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return false;
+  for (const d of tech.deps) {
+    if (!researched.has(d.id)) return false;
+  }
+  return true;
+}
+
+function getMissingDeps(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return [];
+  const missing = [];
+  tech.deps.forEach(d => {
+    if (!researched.has(d.id)) {
+      const depTech = TECHS.find(t => t.id === d.id);
+      missing.push({ name: depTech ? depTech.name : d.id, type: d.type });
+    }
+  });
+  return missing;
+}
+
+function drawEdges() {
+  edges.forEach(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    if (a.scale < 0.1 || b.scale < 0.1) return;
+
+    const sa = worldToScreen(a.x, a.y);
+    const sb = worldToScreen(b.x, b.y);
+
+    let color;
+    if (e.type === 'direct') color = '#3498db';
+    else if (e.type === 'indirect') color = '#e74c3c';
+    else color = '#2ecc71';
+
+    // Вычисляем направление и рисуем стрелку у конца (у целевой ноды)
+    const dx = sb.x - sa.x, dy = sb.y - sa.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ux = dx/dist, uy = dy/dist;
+
+    // Сдвигаем конец стрелки к краю ноды b
+    const bRadius = getNodeRadius(b) * camera.zoom;
+    const endX = sb.x - ux * bRadius;
+    const endY = sb.y - uy * bRadius;
+    const startX = sa.x + ux * getNodeRadius(a) * camera.zoom;
+    const startY = sa.y + uy * getNodeRadius(a) * camera.zoom;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2 * camera.zoom;
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Стрелка
+    const arrowLen = 12 * camera.zoom;
+    const arrowAngle = 0.45;
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - arrowLen * Math.cos(Math.atan2(dy, dx) - arrowAngle), endY - arrowLen * Math.sin(Math.atan2(dy, dx) - arrowAngle));
+    ctx.lineTo(endX - arrowLen * Math.cos(Math.atan2(dy, dx) + arrowAngle), endY - arrowLen * Math.sin(Math.atan2(dy, dx) + arrowAngle));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function getNodeRadius(n) {
+  return 38;
+}
+
+function drawNodes() {
+  nodes.forEach(n => {
+    if (n.scale < 0.01) return;
+    const s = worldToScreen(n.x, n.y);
+    const baseR = getNodeRadius(n) * camera.zoom * n.scale;
+    const color = TREES[n.tree].color;
+    const available = isNodeAvailable(n);
+    const isResearched = researched.has(n.id);
+    const tech = TECHS.find(t => t.id === n.id);
+
+    // Пульсация
+    if (n.pulseActive) {
+      const pulseR = baseR + Math.sin(n.pulsePhase) * 18 * camera.zoom;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.12 * (1 - n.pulsePhase / (Math.PI * 2));
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Тень
+    ctx.beginPath();
+    ctx.arc(s.x, s.y + 3 * camera.zoom, baseR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fill();
+
+    // Основной круг
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, baseR, 0, Math.PI * 2);
+
+    if (isResearched) {
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#2ecc71';   // 1b7942
+      ctx.lineWidth = 6 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    } else if (available) {
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.88;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2.5 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    } else {
+      // Заблокирована: цвет дерева с прозрачностью + пунктир
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.18;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 * camera.zoom;
+      ctx.setLineDash([6 * camera.zoom, 4 * camera.zoom]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Текст внутри ноды
+    if (tech && n.scale > 0.3) {
+      // Адаптивный размер шрифта
+      const zoomLevel = camera.zoom;
+      let showFull = zoomLevel > 0.7;
+      let showLevel = zoomLevel > 0.45;
+      let showText = zoomLevel > 0.35;
+
+      if (!showText) return;
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (showFull) {
+        // Полное название
+        const fontSize = Math.max(9, Math.min(13, 12 * camera.zoom));
+        ctx.font = `600 ${fontSize}px 'Segoe UI', system-ui`;
+        ctx.fillStyle = isResearched || available ? '#fff' : color;
+        ctx.globalAlpha = isResearched || available ? 1 : 0.6;
+
+        // Разбиваем длинное название на строки
+        const words = tech.name.split(' ');
+        const lineHeight = fontSize * 1.15;
+        const maxTextWidth = baseR * 1.6;
+        let lines = [];
+        let currentLine = '';
+        words.forEach(w => {
+          const testLine = currentLine ? currentLine + ' ' + w : w;
+          if (ctx.measureText(testLine).width > maxTextWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = w;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        const totalTextHeight = lines.length * lineHeight;
+        const levelOffset = showLevel ? 10 * camera.zoom : 0;
+        const startY = s.y - totalTextHeight / 2 - levelOffset / 2;
+
+        lines.forEach((line, i) => {
+          ctx.fillText(line, s.x, startY + i * lineHeight + lineHeight / 2);
+        });
+
+        // Уровень
+        if (showLevel) {
+          const levelFontSize = Math.max(8, Math.min(11, 10 * camera.zoom));
+          ctx.font = `700 ${levelFontSize}px 'Segoe UI', system-ui`;
+          ctx.fillStyle = isResearched || available ? 'rgba(255,255,255,0.85)' : color;
+          ctx.globalAlpha = isResearched || available ? 0.85 : 0.5;
+          const levelText = `Ур. ${LEVEL_ROMAN[tech.level] || (tech.level + 1)}`;
+          ctx.fillText(levelText, s.x, s.y + totalTextHeight / 2 + levelFontSize * 0.8);
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        // Сокращённое название
+        const fontSize = Math.max(8, Math.min(11, 10 * camera.zoom));
+        ctx.font = `700 ${fontSize}px 'Segoe UI', system-ui`;
+        ctx.fillStyle = isResearched || available ? '#fff' : color;
+        ctx.globalAlpha = isResearched || available ? 0.9 : 0.5;
+
+        const words = tech.name.split(' ');
+        const short = words.length > 1 ? words[0].substring(0, 4) : tech.name.substring(0, 5);
+        ctx.fillText(short.toUpperCase(), s.x, s.y - (showLevel ? 6 * camera.zoom : 0));
+
+        if (showLevel) {
+          const levelFontSize = Math.max(7, 9 * camera.zoom);
+          ctx.font = `700 ${levelFontSize}px 'Segoe UI', system-ui`;
+          ctx.fillText(`Ур.${LEVEL_ROMAN[tech.level] || (tech.level+1)}`, s.x, s.y + 10 * camera.zoom);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+  });
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawEdges();
+  drawNodes();
+}
+
+// ============================================================
+// ЦИКЛ
+// ============================================================
+function loop() {
+  simulate(1);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+// СОБЫТИЯ
+// ============================================================
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08;
+  const mouse = screenToWorld(e.clientX, e.clientY);
+  camera.zoom *= zoomFactor;
+  camera.zoom = Math.max(0.25, Math.min(3.5, camera.zoom));
+  const newMouse = screenToWorld(e.clientX, e.clientY);
+  camera.x += mouse.x - newMouse.x;
+  camera.y += mouse.y - newMouse.y;
+}, { passive: false });
+
+canvas.addEventListener('mousedown', e => {
+  const world = screenToWorld(e.clientX, e.clientY);
+  let clicked = null;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const s = worldToScreen(n.x, n.y);
+    const dx = s.x - e.clientX, dy = s.y - e.clientY;
+    if (Math.sqrt(dx*dx + dy*dy) < getNodeRadius(n) * camera.zoom * n.scale + 5) {
+      clicked = n;
+      break;
+    }
+  }
+
+  if (clicked) {
+    draggingNode = clicked;
+    dragStart = { x: e.clientX, y: e.clientY };
+  } else {
+    panning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    cameraStart = { x: camera.x, y: camera.y };
+    canvas.classList.add('dragging');
+    closeTechPanel();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (draggingNode) {
+    const world = screenToWorld(e.clientX, e.clientY);
+    draggingNode.x = world.x;
+    draggingNode.y = world.y;
+    draggingNode.vx = 0;
+    draggingNode.vy = 0;
+    // Обновляем позицию панели если открыта
+    if (selectedNode === draggingNode) {
+      positionTechPanel(draggingNode);
+    }
+  } else if (panning) {
+    const dx = (e.clientX - panStart.x) / camera.zoom;
+    const dy = (e.clientY - panStart.y) / camera.zoom;
+    camera.x = cameraStart.x + dx;
+    camera.y = cameraStart.y + dy;
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (draggingNode) {
+    const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (Math.sqrt(dx*dx + dy*dy) < 5) {
+      openTechPanel(draggingNode);
+    }
+    draggingNode = null;
+  }
+  panning = false;
+  canvas.classList.remove('dragging');
+});
+
+// ============================================================
+// ПАНЕЛЬ ТЕХНОЛОГИИ (pop-up справа от ноды)
+// ============================================================
+function positionTechPanel(node) {
+  const panel = document.getElementById('techPanel');
+  const s = worldToScreen(node.x, node.y);
+  const panelW = 340;
+  const panelH = panel.offsetHeight || 500;
+
+  // Позиция справа от ноды с отступом
+  let px = s.x + getNodeRadius(node) * camera.zoom + 16;
+  let py = s.y - panelH / 2;
+
+  // Если выходит за правый край — ставим слева
+  if (px + panelW > W - 16) {
+    px = s.x - getNodeRadius(node) * camera.zoom - panelW - 16;
+  }
+  // Если выходит за верх/низ
+  py = Math.max(16, Math.min(H - panelH - 16, py));
+
+  panel.style.left = px + 'px';
+  panel.style.top = py + 'px';
+}
+
+function openTechPanel(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return;
+  selectedNode = node;
+
+  document.getElementById('tpDot').style.background = TREES[tech.tree].color;
+  document.getElementById('tpName').textContent = tech.name;
+  const tag = document.getElementById('tpTag');
+  tag.textContent = TREES[tech.tree].name;
+  tag.style.background = TREES[tech.tree].color;
+  document.getElementById('tpWhat').textContent = tech.desc.what;
+  document.getElementById('tpAppearance').textContent = tech.desc.appearance;
+  document.getElementById('tpGives').textContent = tech.desc.gives;
+
+  // Блок "Не хватает"
+  const missing = getMissingDeps(node);
+  const missingWrap = document.getElementById('tpMissingWrap');
+  const missingList = document.getElementById('tpMissingList');
+  if (missing.length > 0 && !researched.has(node.id)) {
+    missingWrap.style.display = 'block';
+    missingList.innerHTML = missing.map(m => {
+      const typeLabel = m.type === 'indirect' ? ' (из другого дерева)' : '';
+      return `<li>${m.name}${typeLabel}</li>`;
+    }).join('');
+  } else {
+    missingWrap.style.display = 'none';
+  }
+
+  const btn = document.getElementById('tpResearchBtn');
+  const available = isNodeAvailable(node);
+  const done = researched.has(node.id);
+
+  if (done) {
+    btn.textContent = '✓ Исследовано';
+    btn.className = 'research-btn done';
+    btn.onclick = null;
+  } else if (available) {
+    btn.textContent = 'Исследовать';
+    btn.className = 'research-btn available';
+    btn.onclick = () => researchTech(node);
+  } else {
+    btn.textContent = 'Недоступно';
+    btn.className = 'research-btn locked';
+    btn.onclick = null;
+  }
+
+  const panel = document.getElementById('techPanel');
+  panel.style.display = 'block';
+  // Принудительный reflow для анимации
+  void panel.offsetWidth;
+  positionTechPanel(node);
+  requestAnimationFrame(() => {
+    panel.classList.add('show');
+  });
+}
+
+function closeTechPanel() {
+  const panel = document.getElementById('techPanel');
+  panel.classList.remove('show');
+  setTimeout(() => {
+    if (!panel.classList.contains('show')) {
+      panel.style.display = 'none';
+    }
+  }, 300);
+  selectedNode = null;
+}
+
+function researchTech(node) {
+  researched.add(node.id);
+  node.pulseActive = true;
+  node.pulsePhase = 0;
+
+  edges.forEach(e => {
+    if (e.from === node.id || e.to === node.id) {
+      const other = nodes.find(n => n.id === (e.from === node.id ? e.to : e.from));
+      if (other) {
+        const dx = other.x - node.x, dy = other.y - node.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        other.vx += (dx/dist) * 35;
+        other.vy += (dy/dist) * 35;
+      }
+    }
+  });
+
+  openTechPanel(node);
+}
+
+// ============================================================
+// ЛЕГЕНДА
+// ============================================================
+document.getElementById('legendBtn').addEventListener('click', () => {
+  document.getElementById('legendPanel').classList.toggle('show');
+});
+
+// ============================================================
+// ПОИСК
+// ============================================================
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1] + (a[i-1]!==b[j-1]?1:0));
+  return dp[m][n];
+}
+
+function fuzzyScore(query, text) {
+  const q = query.toLowerCase(), t = text.toLowerCase();
+  if (t.includes(q)) return 100 - q.length;
+  if (q.length <= 5) {
+    const words = t.split(' ');
+    let best = Infinity;
+    words.forEach(w => {
+      const d = levenshtein(q, w.substring(0, q.length + 2));
+      if (d < best) best = d;
+    });
+    return Math.max(0, 50 - best * 10);
+  }
+  let qi = 0, score = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) { score++; qi++; }
+  }
+  return qi === q.length ? score * 5 : 0;
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  if (!q) { searchResults.style.display = 'none'; return; }
+
+  const scored = TECHS.map(t => ({
+    tech: t,
+    score: fuzzyScore(q, t.name)
+  })).filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0, 8);
+
+  if (scored.length === 0) { searchResults.style.display = 'none'; return; }
+
+  searchResults.innerHTML = scored.map(s => {
+    return `<div class="search-result-item" data-id="${s.tech.id}">
+      <div class="dot" style="background:${TREES[s.tech.tree].color}"></div>
+      <span>${s.tech.name}</span>
+      <span class="score">${Math.round(s.score)}%</span>
+    </div>`;
+  }).join('');
+  searchResults.style.display = 'block';
+
+  searchResults.querySelectorAll('.search-result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const node = nodes.find(n => n.id === id);
+      if (node) {
+        camera.x = -node.x;
+        camera.y = -node.y;
+        camera.zoom = 1.3;
+        setTimeout(() => openTechPanel(node), 100);
+      }
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    });
+  });
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#searchBox') && !e.target.closest('#searchResults')) {
+    searchResults.style.display = 'none';
+  }
+});
+
+// ============================================================
+// ЭКСПОРТ / ИМПОРТ
+// ============================================================
+function exportSave() {
+  const data = {
+    version: 1,
+    researched: Array.from(researched),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tech_tree_save.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importSave(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.researched && Array.isArray(data.researched)) {
+        researched = new Set(data.researched);
+        nodes.forEach(n => {
+          if (researched.has(n.id)) {
+            n.pulseActive = true;
+            n.pulsePhase = 0;
+          }
+        });
+        alert(`Импортировано ${researched.size} технологий.`);
+      }
+    } catch (err) {
+      alert('Ошибка чтения файла: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// СТАРТ
+// ============================================================
+initNodes();
+loop();
+</script>
+</body>
+</html>

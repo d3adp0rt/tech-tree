@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Технологии - UwU</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #0a0c14; }
+  #canvas { display: block; cursor: grab; }
+  #canvas.dragging { cursor: grabbing; }
+
+  .ui-panel {
+    position: fixed; background: rgba(15,17,26,0.92); backdrop-filter: blur(16px);
+    border-radius: 14px; box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08); z-index: 10;
+  }
+
+  #searchBox {
+    top: 16px; left: 50%; transform: translateX(-50%);
+    padding: 11px 18px; width: 360px;
+  }
+  #searchBox input {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-size: 14px; color: #e8eaf0; letter-spacing: 0.2px;
+  }
+  #searchBox input::placeholder { color: #555; }
+
+  #legendBtn {
+    top: 16px; left: 16px; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold; cursor: pointer;
+    background: rgba(255,255,255,0.08); color: #aaa; border-radius: 12px;
+    transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+  }
+  #legendBtn:hover { background: rgba(255,255,255,0.14); color: #fff; transform: scale(1.05); }
+
+  #legendPanel {
+    top: 70px; left: 16px; padding: 18px 22px;
+    display: none; min-width: 280px;
+  }
+  #legendPanel.show { display: block; }
+  #legendPanel h3 { font-size: 11px; color: #666; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin: 9px 0; font-size: 13px; color: #aaa; }
+  .legend-line { width: 32px; height: 3px; border-radius: 2px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+  #ioPanel {
+    bottom: 24px; left: 16px; padding: 10px 14px;
+    display: flex; gap: 8px; z-index: 5;
+  }
+  .io-btn {
+    padding: 8px 14px; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.1); color: #ccc; font-size: 12px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .io-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+  #techPanel {
+    position: fixed; width: 350px; padding: 0;
+    display: none; z-index: 20; opacity: 0;
+    transform: scale(0.88) translateY(10px);
+    transition: opacity 0.28s cubic-bezier(0.34,1.56,0.64,1), transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+    background: rgba(12,14,22,0.97);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+  #techPanel.show { display: block; opacity: 1; transform: scale(1) translateY(0); }
+  #techPanel .panel-accent { height: 4px; width: 100%; }
+  #techPanel .panel-inner { padding: 20px 24px 22px; max-height: 75vh; overflow-y: auto; }
+  #techPanel .panel-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+  #techPanel .panel-dot { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; box-shadow: 0 0 8px currentColor; }
+  #techPanel .panel-title-area { flex: 1; }
+  #techPanel h2 { font-size: 18px; color: #f0f2f8; line-height: 1.25; font-weight: 700; }
+  #techPanel .tree-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; color: rgba(255,255,255,0.9); margin-top: 6px; font-weight: 600; opacity: 0.85;
+  }
+  #techPanel .subtree-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; margin-left: 4px; font-weight: 500;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  }
+  #techPanel .close-btn {
+    position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+    border: none; background: rgba(255,255,255,0.07); border-radius: 50%; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    color: #888; transition: all 0.15s;
+  }
+  #techPanel .close-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  #techPanel .section { margin: 14px 0; }
+  #techPanel .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 5px; font-weight: 700; }
+  #techPanel .section-text { font-size: 13px; color: #9aa; line-height: 1.6; }
+  #techPanel .missing-section { margin: 14px 0; padding: 12px 14px; background: rgba(231,76,60,0.08); border-radius: 10px; border-left: 3px solid #e74c3c; }
+  #techPanel .missing-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #e74c3c; margin-bottom: 6px; font-weight: 700; }
+  #techPanel .missing-list { list-style: none; padding: 0; }
+  #techPanel .missing-list li { font-size: 12px; color: #888; padding: 2px 0 2px 16px; position: relative; }
+  #techPanel .missing-list li::before { content: '✕'; position: absolute; left: 0; color: #e74c3c; font-size: 10px; top: 3px; }
+  #techPanel .research-btn {
+    margin-top: 18px; width: 100%; padding: 13px;
+    border: none; border-radius: 12px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.22s; letter-spacing: 0.4px;
+  }
+  #techPanel .research-btn.available { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; box-shadow: 0 4px 16px rgba(231,76,60,0.25); }
+  #techPanel .research-btn.available:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(231,76,60,0.4); }
+  #techPanel .research-btn.locked { background: rgba(255,255,255,0.05); color: #444; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06); }
+  #techPanel .research-btn.done { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; cursor: default; box-shadow: 0 4px 16px rgba(46,204,113,0.2); }
+
+  #searchResults {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    background: rgba(12,14,22,0.97); backdrop-filter: blur(16px);
+    border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.08); max-height: 300px; overflow-y: auto;
+    display: none; z-index: 20; min-width: 360px;
+  }
+  .search-result-item {
+    padding: 10px 18px; cursor: pointer; font-size: 13px; color: #bbb;
+    border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px;
+    transition: background 0.12s;
+  }
+  .search-result-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .search-result-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .search-result-item .score { margin-left: auto; font-size: 10px; color: #444; }
+
+  #filterStrip {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, rgba(80,80,120,0.4) 0%, rgba(120,80,120,0.5) 50%, rgba(80,80,120,0.4) 100%);
+    z-index: 100; cursor: pointer;
+    transition: height 0.2s, background 0.2s;
+  }
+  #filterStrip:hover, #filterStrip.active { height: 8px; background: linear-gradient(90deg, rgba(100,100,180,0.7) 0%, rgba(180,100,180,0.8) 50%, rgba(100,100,180,0.7) 100%); }
+
+  #filterPanel {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 210px;
+    background: rgba(8,10,18,0.97); backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+    z-index: 99;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.34,1.2,0.64,1);
+    padding: 16px 24px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #filterPanel.visible { transform: translateY(0); }
+
+  .filter-tabs { display: flex; gap: 4px; align-items: center; }
+  .filter-tab {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04); color: #555;
+    transition: all 0.18s; letter-spacing: 0.3px;
+  }
+  .filter-tab.active { background: rgba(255,255,255,0.12); color: #e8eaf0; border-color: rgba(255,255,255,0.2); }
+  .filter-tab:hover { color: #bbb; background: rgba(255,255,255,0.08); }
+
+  .filter-reset-btn {
+    margin-left: auto; padding: 6px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    border: 1px solid rgba(231,76,60,0.3); background: rgba(231,76,60,0.08);
+    color: #e74c3c; transition: all 0.18s;
+  }
+  .filter-reset-btn:hover { background: rgba(231,76,60,0.18); }
+
+  .filter-search-row { display: flex; gap: 8px; align-items: flex-start; }
+  .filter-input-wrap { position: relative; flex: 1; }
+  .filter-input-wrap input {
+    width: 100%; padding: 9px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #e8eaf0; font-size: 13px; outline: none;
+    transition: border-color 0.18s;
+  }
+  .filter-input-wrap input:focus { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
+  .filter-input-wrap input::placeholder { color: #444; }
+
+  .filter-suggestions {
+    position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+    background: rgba(12,14,22,0.98); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; max-height: 180px; overflow-y: auto;
+    display: none; z-index: 200;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+  }
+  .filter-suggestions.show { display: block; }
+  .filter-suggestion-item {
+    padding: 9px 14px; cursor: pointer; font-size: 12px; color: #aaa;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .filter-suggestion-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .filter-suggestion-item .fsub { font-size: 10px; color: #555; margin-left: auto; }
+
+  .filter-active-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; align-items: center; }
+  .filter-tag {
+    padding: 4px 10px 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #ddd;
+    transition: all 0.15s;
+  }
+  .filter-tag:hover { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.3); }
+  .filter-tag .ftag-remove { font-size: 12px; color: #777; line-height: 1; }
+  .filter-status { font-size: 11px; color: #444; }
+
+  #fileInput { display: none; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="searchBox" class="ui-panel">
+  <input type="text" id="searchInput" placeholder="🔍 Поиск технологий..." autocomplete="off">
+</div>
+<div id="searchResults"></div>
+
+<div id="legendBtn" class="ui-panel">?</div>
+<div id="legendPanel" class="ui-panel">
+  <h3>Типы связей</h3>
+  <div class="legend-item"><div class="legend-line" style="background:#5b9bd5"></div> Прямая связь</div>
+  <div class="legend-item"><div class="legend-line" style="background:#e74c3c"></div> Непрямая связь</div>
+  <div class="legend-item"><div class="legend-line" style="background:#2ecc71"></div> Косвенная связь</div>
+  <h3 style="margin-top:14px">Состояния</h3>
+  <div class="legend-item"><div class="legend-dot" style="background:#333; border:2px dashed #555"></div> Заблокирована</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3498db; box-shadow:0 0 6px #3498db"></div> Доступна</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2ecc71; box-shadow:0 0 10px #ffe066"></div> Исследована</div>
+</div>
+
+<div id="ioPanel" class="ui-panel">
+  <button class="io-btn" onclick="exportSave()">💾 Экспорт</button>
+  <button class="io-btn" onclick="document.getElementById('fileInput').click()">📂 Импорт</button>
+  <input type="file" id="fileInput" accept=".json" onchange="importSave(event)">
+</div>
+
+<div id="techPanel">
+  <div class="panel-accent" id="tpAccent"></div>
+  <button class="close-btn" onclick="closeTechPanel()">✕</button>
+  <div class="panel-inner">
+    <div class="panel-header">
+      <div class="panel-dot" id="tpDot"></div>
+      <div class="panel-title-area">
+        <h2 id="tpName"></h2>
+        <div>
+          <div id="tpTag" class="tree-tag"></div>
+          <div id="tpSubTag" class="subtree-tag" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section"><div class="section-title">Что это</div><div class="section-text" id="tpWhat"></div></div>
+    <div class="section"><div class="section-title">Как выглядит</div><div class="section-text" id="tpAppearance"></div></div>
+    <div class="section"><div class="section-title">Что даёт</div><div class="section-text" id="tpGives"></div></div>
+    <div id="tpMissingWrap" class="missing-section" style="display:none">
+      <div class="missing-title">Не хватает</div>
+      <ul class="missing-list" id="tpMissingList"></ul>
+    </div>
+    <button class="research-btn" id="tpResearchBtn">Исследовать</button>
+  </div>
+</div>
+
+<!-- FILTER PANEL -->
+<div id="filterStrip"></div>
+<div id="filterPanel">
+  <div class="filter-tabs">
+    <div class="filter-tab active" data-tab="tree">По дереву</div>
+    <div class="filter-tab" data-tab="subtree">По под-дереву</div>
+    <div class="filter-tab" data-tab="group">По группе</div>
+    <button class="filter-reset-btn" onclick="resetFilter()">✕ Сброс</button>
+  </div>
+  <div class="filter-search-row">
+    <div class="filter-input-wrap">
+      <input type="text" id="filterInput" placeholder="Начните вводить название..." autocomplete="off">
+      <div class="filter-suggestions" id="filterSuggestions"></div>
+    </div>
+  </div>
+  <div class="filter-active-tags" id="filterActiveTags">
+    <span class="filter-status">Фильтр не активен — показаны все технологии</span>
+  </div>
+</div>
+<script src="./data/data.js"></script>
+<script>
+const LEVEL_ROMAN = ["I","II","III","IV","V","VI"];
+const VERSION = '0.4.1';
+
+// ============================================================
+// ДАННЫЕ: Импоротируются из отдельных модулей для удобства редактирования и оптимизации загрузки
+// ============================================================
+
+// import { TREES, SUBTREES, TECHS } from './data/data.js';
+
+// ============================================================
+// КЭШИ (строятся один раз)
+// ============================================================
+const TECH_MAP = new Map(TECHS.map(t => [t.id, t]));
+
+// node.id -> subtree key
+const NODE_SUBTREE_MAP = new Map();
+for (const [key, st] of Object.entries(SUBTREES)) {
+  for (const nid of st.nodeIds) NODE_SUBTREE_MAP.set(nid, key);
+}
+
+// node.id -> color string (pre-computed)
+const NODE_COLOR_CACHE = new Map();
+function buildColorCache() {
+  for (const t of TECHS) {
+    const stKey = NODE_SUBTREE_MAP.get(t.id);
+    NODE_COLOR_CACHE.set(t.id, stKey ? SUBTREES[stKey].color : TREES[t.tree].color);
+  }
+}
+buildColorCache();
+
+// hexToRgb cache
+const RGB_CACHE = new Map();
+function hexToRgb(hex) {
+  if (RGB_CACHE.has(hex)) return RGB_CACHE.get(hex);
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  const val = {r,g,b};
+  RGB_CACHE.set(hex, val);
+  return val;
+}
+
+// Pre-compute rgba strings for edge colors (avoids repeated hexToRgb in hot path)
+const EDGE_COLOR_STRINGS = {
+  direct:    hexToRgb('#4a9fd5'),
+  indirect:  hexToRgb('#e05050'),
+  cosvennaya: hexToRgb('#3dbb77'),
+  default:   hexToRgb('#3dbb77'),
+};
+
+function getEdgeRgb(type) {
+  return EDGE_COLOR_STRINGS[type] || EDGE_COLOR_STRINGS.default;
+}
+
+function getNodeColor(nodeId) {
+  return NODE_COLOR_CACHE.get(nodeId) || '#aaa';
+}
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let nodes = [];
+// nodeMap: id -> node (replaces all nodes.find())
+let nodeMap = new Map();
+let edges = [];
+let researched = new Set();
+let camera = { x: 0, y: 0, zoom: 1, targetZoom: 1 };
+let draggingNode = null;
+let dragStart = { x:0, y:0 };
+let panning = false;
+let panStart = { x:0, y:0 };
+let cameraStart = { x:0, y:0 };
+let selectedNode = null;
+let hoveredNode = null;
+let animPhase = 0;
+let animStartTime = 0;
+let physicsRunning = true;
+let time = 0;
+
+// Render state from Worker
+let workerPositions = null; // Float32Array [x0,y0, x1,y1, ...]
+let workerMeta = null;      // Float32Array [scale0, displayScale0, pulsePhase0, pulseActive0, ...]
+
+// Filter state
+let filterState = { type: null, ids: new Set() };
+
+// ============================================================
+// SPATIAL GRID (используется внутри Worker)
+// ============================================================
+
+// ============================================================
+// WEB WORKER (физика вынесена полностью)
+// ============================================================
+const PHYSICS_WORKER_SRC = `
+// ============================================================
+// SPATIAL GRID
+// ============================================================
+class SpatialGrid {
+  constructor(cellSize) {
+    this.cellSize = cellSize;
+    this.cells = new Map();
+  }
+  _key(cx, cy) { return (cx & 0xFFFF) | ((cy & 0xFFFF) << 16); }
+  clear() { this.cells.clear(); }
+  insert(node) {
+    const cx = Math.floor(node.x / this.cellSize);
+    const cy = Math.floor(node.y / this.cellSize);
+    const key = this._key(cx, cy);
+    let cell = this.cells.get(key);
+    if (!cell) { cell = []; this.cells.set(key, cell); }
+    cell.push(node);
+  }
+  queryRadius(x, y, radius) {
+    const r = [];
+    const minCX = Math.floor((x - radius) / this.cellSize);
+    const maxCX = Math.floor((x + radius) / this.cellSize);
+    const minCY = Math.floor((y - radius) / this.cellSize);
+    const maxCY = Math.floor((y + radius) / this.cellSize);
+    for (let cx = minCX; cx <= maxCX; cx++) {
+      for (let cy = minCY; cy <= maxCY; cy++) {
+        const cell = this.cells.get(this._key(cx, cy));
+        if (cell) for (const n of cell) r.push(n);
+      }
+    }
+    return r;
+  }
+}
+
+const REPULSION         = 8000;
+const SPRING            = 0.1;
+const SPRING_LEN        = 180;
+const CROSS_TREE_SPRING = 0;     // можно включить для более плотного сближения разных деревьев, но это ухудшает читаемость
+const CROSS_TREE_LEN    = 1000;      // По факту любое число >= 0 будет работать, т.к. CROSS_TREE_SPRING = 0, но так код требует, так что anyway
+const CENTER_FORCE      = 0.0003;
+const DAMPING           = 0.8;
+const JITTER            = 0.0;
+const GRID_RADIUS       = 400;
+
+let nodes = [];
+let edges = [];
+let nodeMap = new Map();
+let treeKeys = [];
+let treeCenters = {};
+let draggingId = null;
+let animStartTime = 0;
+let animPhase = 0;
+const grid = new SpatialGrid(GRID_RADIUS);
+
+self.onmessage = function(e) {
+  const msg = e.data;
+  switch(msg.type) {
+    case 'init':
+      nodes = msg.nodes;
+      edges = msg.edges;
+      treeKeys = msg.treeKeys;
+      treeCenters = msg.treeCenters;
+      nodeMap = new Map(nodes.map(n => [n.id, n]));
+      animStartTime = msg.animStartTime;
+      break;
+    case 'tick':
+      draggingId = msg.draggingId;
+      // Update dragging node position from main thread
+      if (draggingId && msg.dragX !== undefined) {
+        const dn = nodeMap.get(draggingId);
+        if (dn) { dn.x = msg.dragX; dn.y = msg.dragY; dn.vx = 0; dn.vy = 0; }
+      }
+      simulate(msg.dt, msg.now);
+      // Send back compact Float32Arrays
+      // positions: [x,y per node]
+      // meta: [scale, displayScale, pulsePhase, pulseActive, hoveredFlag per node]
+      const posArr = new Float32Array(nodes.length * 2);
+      const metaArr = new Float32Array(nodes.length * 4);
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        posArr[i*2]   = n.x;
+        posArr[i*2+1] = n.y;
+        metaArr[i*4]   = n.scale;
+        metaArr[i*4+1] = n.displayScale;
+        metaArr[i*4+2] = n.pulsePhase;
+        metaArr[i*4+3] = n.pulseActive ? 1 : 0;
+      }
+      self.postMessage({ type: 'frame', pos: posArr, meta: metaArr }, [posArr.buffer, metaArr.buffer]);
+      break;
+    case 'setHover':
+      for (const n of nodes) n._hovered = (n.id === msg.id);
+      break;
+    case 'research':
+      // Apply impulse to neighbors on research
+      for (const e of edges) {
+        if (e.from === msg.id || e.to === msg.id) {
+          const otherId = e.from === msg.id ? e.to : e.from;
+          const other = nodeMap.get(otherId);
+          const src = nodeMap.get(msg.id);
+          if (other && src) {
+            const dx = other.x - src.x, dy = other.y - src.y;
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            other.vx += (dx/dist) * 30;
+            other.vy += (dy/dist) * 30;
+          }
+        }
+      }
+      // Start pulse
+      const rn = nodeMap.get(msg.id);
+      if (rn) { rn.pulseActive = true; rn.pulsePhase = 0; }
+      break;
+    case 'importResearch':
+      // Mark pulse on imported researched nodes
+      for (const id of msg.ids) {
+        const n = nodeMap.get(id);
+        if (n) { n.pulseActive = true; n.pulsePhase = 0; }
+      }
+      break;
+  }
+};
+
+function simulate(dt, now) {
+  if (nodes.length === 0) return;
+
+  // ---- Repulsion via Spatial Grid (O(n) expected) ----
+  grid.clear();
+  for (const n of nodes) grid.insert(n);
+
+  for (const a of nodes) {
+    const neighbors = grid.queryRadius(a.x, a.y, GRID_RADIUS);
+    for (const b of neighbors) {
+      if (b.id <= a.id) continue; // avoid double-counting (string compare, consistent)
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist2 = dx*dx + dy*dy;
+      if (dist2 < 1) dist2 = 1;
+      let dist = Math.sqrt(dist2);
+      let force = REPULSION / dist2;
+      let fx = (dx / dist) * force;
+      let fy = (dy / dist) * force;
+      a.vx -= fx * dt; a.vy -= fy * dt;
+      b.vx += fx * dt; b.vy += fy * dt;
+    }
+  }
+
+  // ---- Spring forces (edges) ----
+  for (const e of edges) {
+    const a = nodeMap.get(e.from);
+    const b = nodeMap.get(e.to);
+    if (!a || !b) continue;
+    
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    
+    // Разные параметры для внутри-деревьевых и меж-деревьевых связей
+    const isCrossTree = !!e.isCrossTree;
+    const springK = isCrossTree ? CROSS_TREE_SPRING : SPRING;
+    const springLen = isCrossTree ? CROSS_TREE_LEN : SPRING_LEN;
+    
+    let force = (dist - springLen) * springK;
+    let fx = (dx / dist) * force;
+    let fy = (dy / dist) * force;
+    
+    a.vx += fx * dt; a.vy += fy * dt;
+    b.vx -= fx * dt; b.vy -= fy * dt;
+  }
+
+  // ---- Tree center attraction ----
+  const elapsed = (now - animStartTime) / 1000;
+  animPhase = Math.min(1, elapsed / 4);
+
+  for (const n of nodes) {
+    const tc = treeCenters[n.tree];
+    if (!tc) continue;
+    n.vx += (tc.x - n.x) * CENTER_FORCE * dt;
+    n.vy += (tc.y - n.y) * CENTER_FORCE * dt;
+    if (animPhase >= 1) {
+      n.vx += (Math.random() - 0.5) * JITTER * dt;
+      n.vy += (Math.random() - 0.5) * JITTER * dt;
+    }
+  }
+
+  // ---- Integration ----
+  for (const n of nodes) {
+    if (n.id === draggingId) continue;
+    n.vx *= DAMPING;
+    n.vy *= DAMPING;
+    n.x += n.vx * dt;
+    n.y += n.vy * dt;
+  }
+
+  // ---- Appear scale animation ----
+  for (const n of nodes) {
+    if (elapsed > n.appearDelay) {
+      const diff = n.targetScale - n.scale;
+      n.scale += diff * 0.13 + (n.scale > n.targetScale + 0.01 ? -0.002 : 0);
+      if (n.scale > 1.15) n.scale = 1.15;
+    }
+    const isHovered = !!n._hovered;
+    const target = isHovered ? 1.1 : n.scale;
+    n.displayScale = n.displayScale + (target - n.displayScale) * 0.15;
+  }
+
+  // ---- Pulse animation ----
+  for (const n of nodes) {
+    if (n.pulseActive) {
+      n.pulsePhase += dt * 2.5;
+      if (n.pulsePhase > Math.PI * 2) {
+        n.pulseActive = false;
+        n.pulsePhase = 0;
+      }
+    }
+  }
+}
+`;
+
+// Build Blob-URL for the Worker
+const workerBlob = new Blob([PHYSICS_WORKER_SRC], { type: 'application/javascript' });
+const workerURL  = URL.createObjectURL(workerBlob);
+const physicsWorker = new Worker(workerURL);
+
+// Track frame state
+let pendingWorkerTick = false;
+let latestWorkerFrame = null;
+
+physicsWorker.onmessage = function(e) {
+  if (e.data.type === 'frame') {
+    latestWorkerFrame = e.data;
+    pendingWorkerTick = false;
+  }
+};
+
+// ============================================================
+// ХЕЛПЕРЫ
+// ============================================================
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx + camera.x) * camera.zoom + W/2,
+    y: (wy + camera.y) * camera.zoom + H/2
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - W/2) / camera.zoom - camera.x,
+    y: (sy - H/2) / camera.zoom - camera.y
+  };
+}
+
+function isNodeAvailable(node) {
+  const tech = TECH_MAP.get(node.id);
+  if (!tech) return false;
+  if (tech.deps.length === 0) return true;
+  for (const d of tech.deps) {
+    if (!researched.has(d.id)) return false;
+  }
+  return true;
+}
+
+function getMissingDeps(node) {
+  const tech = TECH_MAP.get(node.id);
+  if (!tech) return [];
+  return tech.deps
+    .filter(d => !researched.has(d.id))
+    .map(d => {
+      const depTech = TECH_MAP.get(d.id);
+      return { name: depTech ? depTech.name : d.id, type: d.type };
+    });
+}
+
+function getNodeRadius(n) { return 38; }
+
+function lightenColor(hex, amount) {
+  const {r,g,b} = hexToRgb(hex);
+  return `rgb(${Math.min(255,r+Math.round(amount*255))},${Math.min(255,g+Math.round(amount*255))},${Math.min(255,b+Math.round(amount*255))})`;
+}
+function darkenColor(hex, amount) {
+  const {r,g,b} = hexToRgb(hex);
+  return `rgb(${Math.max(0,r-Math.round(amount*255))},${Math.max(0,g-Math.round(amount*255))},${Math.max(0,b-Math.round(amount*255))})`;
+}
+
+function isNodeFiltered(nodeId) {
+  if (!filterState.type || filterState.ids.size === 0) return true;
+  return filterState.ids.has(nodeId);
+}
+
+// ============================================================
+// VIEWPORT CULLING helpers
+// ============================================================
+// Returns true if a screen-space circle at (sx,sy) with radius r is visible
+function isOnScreen(sx, sy, r) {
+  return sx + r > 0 && sx - r < W && sy + r > 0 && sy - r < H;
+}
+
+// Returns true if a line from (ax,ay) to (bx,by) might be on screen
+// (fast AABB check — not pixel-perfect but cheap)
+function isLineOnScreen(ax, ay, bx, by) {
+  const minX = Math.min(ax, bx), maxX = Math.max(ax, bx);
+  const minY = Math.min(ay, by), maxY = Math.max(ay, by);
+  return maxX > 0 && minX < W && maxY > 0 && minY < H;
+}
+
+// ============================================================
+// GRID-DOTS CACHE
+// ============================================================
+let gridCache = null;
+let gridCacheKey = '';
+
+function drawGrid() {
+  const spacing = 44 * camera.zoom;
+  const offsetX = ((camera.x * camera.zoom) % spacing + spacing) % spacing;
+  const offsetY = ((camera.y * camera.zoom) % spacing + spacing) % spacing;
+
+  // Only rebuild when zoom/pan changes noticeably (rounded to avoid jitter key)
+  const key = `${spacing.toFixed(2)}_${offsetX.toFixed(1)}_${offsetY.toFixed(1)}_${W}_${H}`;
+  if (key !== gridCacheKey) {
+    gridCacheKey = key;
+    const offscreen = new OffscreenCanvas(W, H);
+    const oc = offscreen.getContext('2d');
+    oc.fillStyle = 'rgba(255,255,255,0.07)';
+    for (let x = offsetX; x < W; x += spacing) {
+      for (let y = offsetY; y < H; y += spacing) {
+        oc.beginPath();
+        oc.arc(x, y, 1.5, 0, Math.PI * 2);
+        oc.fill();
+      }
+    }
+    gridCache = offscreen;
+  }
+  ctx.drawImage(gridCache, 0, 0);
+}
+
+// ============================================================
+// РЕНДЕРИНГ
+// ============================================================
+function applyWorkerFrame() {
+  if (!latestWorkerFrame) return;
+  const { pos, meta } = latestWorkerFrame;
+  latestWorkerFrame = null;
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    n.x = pos[i*2];
+    n.y = pos[i*2+1];
+    n.scale        = meta[i*4];
+    n.displayScale = meta[i*4+1];
+    n.pulsePhase   = meta[i*4+2];
+    n.pulseActive  = meta[i*4+3] > 0.5;
+  }
+}
+
+function drawEdges() {
+  for (const e of edges) {
+    const a = nodeMap.get(e.from);
+    const b = nodeMap.get(e.to);
+    if (!a || !b) continue;
+    if (a.scale < 0.1 || b.scale < 0.1) continue;
+
+    const sa = worldToScreen(a.x, a.y);
+    const sb = worldToScreen(b.x, b.y);
+
+    // Viewport culling
+    if (!isLineOnScreen(sa.x, sa.y, sb.x, sb.y)) continue;
+
+    const filteredA = isNodeFiltered(a.id);
+    const filteredB = isNodeFiltered(b.id);
+    const edgeVisible = filteredA && filteredB;
+
+    const isResA = researched.has(a.id);
+    const isResB = researched.has(b.id);
+    const bothRes = isResA && isResB;
+
+    const rgb = getEdgeRgb(e.type);
+
+    const dx = sb.x - sa.x, dy = sb.y - sa.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ux = dx/dist, uy = dy/dist;
+
+    const aRadius = getNodeRadius(a) * camera.zoom * a.displayScale;
+    const bRadius = getNodeRadius(b) * camera.zoom * b.displayScale;
+    const startX = sa.x + ux * aRadius;
+    const startY = sa.y + uy * aRadius;
+    const endX = sb.x - ux * bRadius;
+    const endY = sb.y - uy * bRadius;
+
+    const grad = ctx.createLinearGradient(startX, startY, endX, endY);
+    const alpha = edgeVisible ? (bothRes ? 0.85 : 0.45) : 0.04;
+    grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+    grad.addColorStop(0.2, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`);
+    grad.addColorStop(0.8, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`);
+    grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = bothRes ? 3 * camera.zoom : 2 * camera.zoom;
+    ctx.stroke();
+
+    // Arrow
+    if (edgeVisible) {
+      const arrowLen = 11 * camera.zoom;
+      const arrowAngle = 0.42;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX - arrowLen * Math.cos(angle - arrowAngle), endY - arrowLen * Math.sin(angle - arrowAngle));
+      ctx.lineTo(endX - arrowLen * Math.cos(angle + arrowAngle), endY - arrowLen * Math.sin(angle + arrowAngle));
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${bothRes ? 0.9 : 0.6})`;
+      ctx.fill();
+    }
+  }
+}
+
+function drawNodes() {
+  const now = Date.now();
+
+  for (const n of nodes) {
+    if (n.displayScale < 0.01) continue;
+
+    const s = worldToScreen(n.x, n.y);
+    const baseR = getNodeRadius(n) * camera.zoom * n.displayScale;
+
+    // Viewport culling — skip if not visible
+    if (!isOnScreen(s.x, s.y, baseR + 20 * camera.zoom)) continue;
+
+    const color = getNodeColor(n.id);
+    const available = isNodeAvailable(n);
+    const isResearched = researched.has(n.id);
+    const tech = TECH_MAP.get(n.id);
+    const filtered = isNodeFiltered(n.id);
+    const rgb = hexToRgb(color);
+
+    ctx.save();
+    if (!filtered) ctx.globalAlpha = 0.07;
+
+    // Yellow glow for researched
+    if (isResearched && filtered) {
+      const glowPulse = 14 + Math.sin(now / 900) * 8;
+      ctx.save();
+      ctx.shadowColor = '#ffe066';
+      ctx.shadowBlur = glowPulse * camera.zoom;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, baseR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,224,102,0.12)`;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Pulse ring
+    if (n.pulseActive) {
+      const pulseR = baseR + Math.sin(n.pulsePhase) * 20 * camera.zoom;
+      const pulseAlpha = 0.18 * (1 - n.pulsePhase / (Math.PI * 2));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${pulseAlpha})`;
+      ctx.fill();
+    }
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(s.x, s.y + 4 * camera.zoom, baseR * 0.95, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    // Main circle with radial gradient
+    const grad = ctx.createRadialGradient(
+      s.x - baseR * 0.25, s.y - baseR * 0.25, baseR * 0.05,
+      s.x, s.y, baseR
+    );
+
+    if (isResearched) {
+      grad.addColorStop(0, lightenColor(color, 0.5));
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, darkenColor(color, 0.3));
+    } else if (available) {
+      grad.addColorStop(0, lightenColor(color, 0.35));
+      grad.addColorStop(0.6, color);
+      grad.addColorStop(1, darkenColor(color, 0.25));
+    } else {
+      grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.25)`);
+      grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0.08)`);
+    }
+
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, baseR, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Border
+    if (isResearched) {
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 3 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.shadowColor = '#2ecc71';
+      ctx.shadowBlur = 6 * camera.zoom;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else if (available) {
+      ctx.strokeStyle = `rgba(255,255,255,0.6)`;
+      ctx.lineWidth = 2 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.4)`;
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.setLineDash([5 * camera.zoom, 4 * camera.zoom]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Inner highlight ring
+    if (isResearched || available) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, baseR * 0.72, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,255,255,0.08)`;
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    }
+
+    // Text
+    if (tech && n.displayScale > 0.3) {
+      const zoomLevel = camera.zoom;
+      let showFull = zoomLevel > 0.65;
+      let showLevel = zoomLevel > 0.42;
+      let showText = zoomLevel > 0.32;
+
+      if (showText) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const textColor = isResearched || available ? '#fff' : `rgba(${rgb.r},${rgb.g},${rgb.b},0.7)`;
+
+        if (showFull) {
+          const fontSize = Math.max(9, Math.min(12, 11.5 * camera.zoom));
+          ctx.font = `600 ${fontSize}px 'Segoe UI', system-ui`;
+          ctx.fillStyle = textColor;
+
+          const words = tech.name.split(' ');
+          const lineHeight = fontSize * 1.2;
+          const maxTextWidth = baseR * 1.55;
+          let lines = [];
+          let cur = '';
+          words.forEach(w => {
+            const test = cur ? cur + ' ' + w : w;
+            if (ctx.measureText(test).width > maxTextWidth && cur) {
+              lines.push(cur); cur = w;
+            } else cur = test;
+          });
+          if (cur) lines.push(cur);
+
+          const totalH = lines.length * lineHeight;
+          const levelOff = showLevel ? 9 * camera.zoom : 0;
+          const startY = s.y - totalH / 2 - levelOff / 2;
+          lines.forEach((line, i) => {
+            ctx.fillText(line, s.x, startY + i * lineHeight + lineHeight / 2);
+          });
+
+          if (showLevel) {
+            const lfs = Math.max(7.5, Math.min(10, 9.5 * camera.zoom));
+            ctx.font = `700 ${lfs}px 'Segoe UI', system-ui`;
+            ctx.fillStyle = isResearched || available ? 'rgba(255,255,255,0.7)' : `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)`;
+            ctx.fillText(`Ур. ${LEVEL_ROMAN[tech.level] || (tech.level+1)}`, s.x, s.y + totalH / 2 + lfs * 0.8);
+          }
+        } else {
+          const fontSize = Math.max(7.5, Math.min(10, 9.5 * camera.zoom));
+          ctx.font = `700 ${fontSize}px 'Segoe UI', system-ui`;
+          ctx.fillStyle = textColor;
+          const short = tech.name.split(' ')[0].substring(0, 5);
+          ctx.fillText(short.toUpperCase(), s.x, s.y - (showLevel ? 5 * camera.zoom : 0));
+          if (showLevel) {
+            ctx.font = `700 ${Math.max(7, 8.5 * camera.zoom)}px 'Segoe UI', system-ui`;
+            ctx.fillText(`${LEVEL_ROMAN[tech.level] || (tech.level+1)}`, s.x, s.y + 9 * camera.zoom);
+          }
+        }
+      }
+    }
+
+    // Checkmark badge for researched
+    if (isResearched && filtered) {
+      const badgeR = 11 * camera.zoom;
+      const badgeX = s.x + baseR * 0.68;
+      const badgeY = s.y + baseR * 0.68;
+
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+      ctx.fillStyle = '#27ae60';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2 * camera.zoom;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const cs = badgeR * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(badgeX - cs * 0.6, badgeY - cs * 0.05);
+      ctx.lineTo(badgeX - cs * 0.05, badgeY + cs * 0.55);
+      ctx.lineTo(badgeX + cs * 0.7, badgeY - cs * 0.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+}
+
+function render() {
+  // Apply latest physics frame from Worker
+  applyWorkerFrame();
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawEdges();
+  drawNodes();
+
+  // Smooth zoom (main thread)
+  camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
+}
+
+// ============================================================
+// LOOP
+// ============================================================
+let lastTime = 0;
+function loop(ts) {
+  const dt = Math.min((ts - lastTime) / 16, 3);
+  lastTime = ts;
+  time = ts;
+
+  // Send tick to Worker (non-blocking)
+  if (!pendingWorkerTick && physicsRunning) {
+    pendingWorkerTick = true;
+    physicsWorker.postMessage({
+      type: 'tick',
+      dt,
+      now: performance.now(),
+      draggingId: draggingNode ? draggingNode.id : null,
+      dragX: draggingNode ? draggingNode.x : 0,
+      dragY: draggingNode ? draggingNode.y : 0,
+    });
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  gridCache = null; // invalidate grid dot cache on resize
+  gridCacheKey = '';
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initNodes() {
+  const treeKeys = Object.keys(TREES);
+  const treeCount = treeKeys.length;
+
+  // Группируем узлы по (tree, level)
+  const grouped = {};
+  treeKeys.forEach(k => (grouped[k] = {}));
+  TECHS.forEach(t => {
+    if (!grouped[t.tree][t.level]) grouped[t.tree][t.level] = [];
+    grouped[t.tree][t.level].push(t);
+  });
+
+  // Максимальный уровень по всем деревьям — для нормировки радиусов
+  const maxLevel = Math.max(...TECHS.map(t => t.level), 0);
+
+  // Максимальное число узлов на уровне в любом дереве — для масштабирования сектора
+  let maxPerLevel = 1;
+  treeKeys.forEach(k => {
+    Object.values(grouped[k]).forEach(arr => {
+      if (arr.length > maxPerLevel) maxPerLevel = arr.length;
+    });
+  });
+
+  // Радиальное расположение: расстояние между уровнями и база
+  const LEVEL_STEP   = 140;   // расстояние между уровнями (было 100)
+  const LEVEL_BASE   = 110;   // радиус нулевого уровня (было 70)
+  const NODE_SPACING = 40;    // угловой зазор между узлами (в пикселях по дуге)
+
+  // Радиус орбиты центров деревьев — должен быть достаточно большим,
+  // чтобы "кроны" деревьев не пересекались.
+  // Крона дерева ≈ maxLevel * LEVEL_STEP + LEVEL_BASE
+  const crownRadius = LEVEL_BASE + maxLevel * LEVEL_STEP;
+  const treeOrbitRadius = crownRadius * 1.6 + 100; // с запасом между деревьями
+
+  // Каждому дереву — свой угловой сектор [start, end]
+  const sectorSize = (Math.PI * 2) / treeCount;
+  const sectorPad  = 0.08; // небольшой зазор между секторами (в радианах)
+
+  const treeCenters = {};
+  const treeSectors = {};
+  treeKeys.forEach((key, i) => {
+    const centerAngle = (i / treeCount) * Math.PI * 2 - Math.PI / 2;
+    treeCenters[key] = {
+      x: Math.cos(centerAngle) * treeOrbitRadius,
+      y: Math.sin(centerAngle) * treeOrbitRadius,
+    };
+    treeSectors[key] = {
+      center: centerAngle,
+      start:  centerAngle - sectorSize / 2 + sectorPad,
+      end:    centerAngle + sectorSize / 2 - sectorPad,
+    };
+  });
+
+  // Раскладываем узлы
+  TECHS.forEach(t => {
+    const sector  = treeSectors[t.tree];
+    const center  = treeCenters[t.tree];
+    const levelNodes = grouped[t.tree][t.level] || [];
+    const idx   = levelNodes.indexOf(t);
+    const count = levelNodes.length;
+
+    // Радиус от центра дерева — зависит от уровня
+    const r = LEVEL_BASE + t.level * LEVEL_STEP;
+
+    // Угол внутри сектора: равномерно распределяем все узлы уровня
+    // по доступному диапазону [sector.start, sector.end]
+    let angle;
+    if (count === 1) {
+      angle = sector.center; // одиночный узел — ровно по центру сектора
+    } else {
+      const tParam = idx / (count - 1); // 0..1
+      angle = sector.start + tParam * (sector.end - sector.start);
+    }
+
+    // Небольшой радиальный джиттер по уровню, чтобы узлы одного уровня
+    // не стояли на одной окружности (иначе рёбра выглядят как спицы)
+    const jitterR = (Math.sin(t.id.charCodeAt(0) + t.level) * 0.5 + 0.5) * 18;
+
+    const x = center.x + Math.cos(angle) * (r + jitterR);
+    const y = center.y + Math.sin(angle) * (r + jitterR);
+
+    const node = {
+      id: t.id,
+      x, y,
+      vx: 0, vy: 0,
+      tree: t.tree,
+      level: t.level,
+      scale: 0,
+      targetScale: 1,
+      displayScale: 0,
+      pulsePhase: 0,
+      pulseActive: false,
+      appearDelay: t.level * 0.5 + Math.random() * 0.25,
+      _hovered: false,
+    };
+    nodes.push(node);
+    nodeMap.set(t.id, node);
+  });
+
+  // Добавляем меж-деревьевые связи в физику
+  TECHS.forEach(t => {
+    t.deps.forEach(d => {
+      const depTech = TECHS.find(tech => tech.id === d.id);
+      const isCrossTree = depTech && depTech.tree !== t.tree;
+      
+      edges.push({ 
+        from: d.id, 
+        to: t.id, 
+        type: d.type,
+        isCrossTree: isCrossTree || false
+      });
+    });
+  });
+
+  const animStart = performance.now();
+
+  physicsWorker.postMessage({
+    type: 'init',
+    nodes: nodes.map(n => ({ ...n })),
+    edges: edges.map(e => ({ ...e })),
+    treeKeys,
+    treeCenters,
+    animStartTime: animStart,
+  });
+}
+
+// ============================================================
+// СОБЫТИЯ МЫШИ (оптимизировано)
+// ============================================================
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08;
+  const mouse = screenToWorld(e.clientX, e.clientY);
+  camera.targetZoom *= zoomFactor;
+  camera.targetZoom = Math.max(0.22, Math.min(3.8, camera.targetZoom));
+  const newMouse = screenToWorld(e.clientX, e.clientY);
+  camera.x += mouse.x - newMouse.x;
+  camera.y += mouse.y - newMouse.y;
+}, { passive: false });
+
+canvas.addEventListener('mousedown', e => {
+  const world = screenToWorld(e.clientX, e.clientY);
+  let clicked = null;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const s = worldToScreen(n.x, n.y);
+    const dx = s.x - e.clientX, dy = s.y - e.clientY;
+    if (dx*dx + dy*dy < Math.pow(getNodeRadius(n) * camera.zoom * n.displayScale + 6, 2)) {
+      clicked = n;
+      break;
+    }
+  }
+  if (clicked) {
+    draggingNode = clicked;
+    dragStart = { x: e.clientX, y: e.clientY };
+  } else {
+    panning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    cameraStart = { x: camera.x, y: camera.y };
+    canvas.classList.add('dragging');
+    closeTechPanel();
+  }
+}, { passive: true });
+
+// Throttled mousemove — hover detection every ~16ms
+let lastMouseMove = 0;
+let pendingMouseX = 0, pendingMouseY = 0;
+
+canvas.addEventListener('mousemove', e => {
+  pendingMouseX = e.clientX;
+  pendingMouseY = e.clientY;
+
+  if (draggingNode) {
+    const world = screenToWorld(e.clientX, e.clientY);
+    draggingNode.x = world.x;
+    draggingNode.y = world.y;
+    draggingNode.vx = 0;
+    draggingNode.vy = 0;
+    if (selectedNode === draggingNode) positionTechPanel(draggingNode);
+  } else if (panning) {
+    const dx = (e.clientX - panStart.x) / camera.zoom;
+    const dy = (e.clientY - panStart.y) / camera.zoom;
+    camera.x = cameraStart.x + dx;
+    camera.y = cameraStart.y + dy;
+  }
+
+  const now = performance.now();
+  if (now - lastMouseMove < 16) return;
+  lastMouseMove = now;
+
+  // Hover detection
+  let found = null;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const s = worldToScreen(n.x, n.y);
+    const dx = s.x - e.clientX, dy = s.y - e.clientY;
+    const r = getNodeRadius(n) * camera.zoom * n.displayScale + 4;
+    if (dx*dx + dy*dy < r*r) { found = n; break; }
+  }
+
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    physicsWorker.postMessage({ type: 'setHover', id: found ? found.id : null });
+  }
+  canvas.style.cursor = found ? 'pointer' : (panning ? 'grabbing' : 'grab');
+}, { passive: true });
+
+canvas.addEventListener('mouseup', e => {
+  if (draggingNode) {
+    const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (dx*dx + dy*dy < 25) openTechPanel(draggingNode);
+    draggingNode = null;
+  }
+  panning = false;
+  canvas.classList.remove('dragging');
+}, { passive: true });
+
+// ============================================================
+// ПАНЕЛЬ ТЕХНОЛОГИИ
+// ============================================================
+function positionTechPanel(node) {
+  const panel = document.getElementById('techPanel');
+  const s = worldToScreen(node.x, node.y);
+  const panelW = 350;
+  const panelH = panel.offsetHeight || 480;
+
+  let px = s.x + getNodeRadius(node) * camera.zoom + 18;
+  let py = s.y - panelH / 2;
+
+  if (px + panelW > W - 16) px = s.x - getNodeRadius(node) * camera.zoom - panelW - 18;
+  py = Math.max(16, Math.min(H - panelH - 16, py));
+
+  panel.style.left = px + 'px';
+  panel.style.top = py + 'px';
+}
+
+function openTechPanel(node) {
+  const tech = TECH_MAP.get(node.id);
+  if (!tech) return;
+  selectedNode = node;
+
+  const color = getNodeColor(node.id);
+  document.getElementById('tpAccent').style.background = color;
+  document.getElementById('tpDot').style.background = color;
+  document.getElementById('tpDot').style.boxShadow = `0 0 10px ${color}`;
+  document.getElementById('tpName').textContent = tech.name;
+
+  const tag = document.getElementById('tpTag');
+  tag.textContent = TREES[tech.tree].name;
+  tag.style.background = TREES[tech.tree].color + '33';
+  tag.style.color = TREES[tech.tree].color;
+
+  const stKey = NODE_SUBTREE_MAP.get(node.id);
+  const subTag = document.getElementById('tpSubTag');
+  if (stKey) {
+    subTag.textContent = SUBTREES[stKey].name;
+    subTag.style.display = 'inline-block';
+  } else {
+    subTag.style.display = 'none';
+  }
+
+  document.getElementById('tpWhat').textContent = tech.desc.what;
+  document.getElementById('tpAppearance').textContent = tech.desc.appearance;
+  document.getElementById('tpGives').textContent = tech.desc.gives;
+
+  const missing = getMissingDeps(node);
+  const missingWrap = document.getElementById('tpMissingWrap');
+  const missingList = document.getElementById('tpMissingList');
+  if (missing.length > 0 && !researched.has(node.id)) {
+    missingWrap.style.display = 'block';
+    missingList.innerHTML = missing.map(m => {
+      const lbl = m.type === 'indirect' ? ' <span style="color:#e74c3c;font-size:10px">(другое дерево)</span>' : '';
+      return `<li>${m.name}${lbl}</li>`;
+    }).join('');
+  } else {
+    missingWrap.style.display = 'none';
+  }
+
+  const btn = document.getElementById('tpResearchBtn');
+  const available = isNodeAvailable(node);
+  const done = researched.has(node.id);
+
+  if (done) {
+    btn.textContent = '✓ Исследовано';
+    btn.className = 'research-btn done';
+    btn.onclick = null;
+  } else if (available) {
+    btn.textContent = 'Исследовать';
+    btn.className = 'research-btn available';
+    btn.onclick = () => researchTech(node);
+  } else {
+    btn.textContent = 'Недоступно';
+    btn.className = 'research-btn locked';
+    btn.onclick = null;
+  }
+
+  const panel = document.getElementById('techPanel');
+  panel.style.display = 'block';
+  void panel.offsetWidth;
+  positionTechPanel(node);
+  requestAnimationFrame(() => panel.classList.add('show'));
+}
+
+function closeTechPanel() {
+  const panel = document.getElementById('techPanel');
+  panel.classList.remove('show');
+  setTimeout(() => { if (!panel.classList.contains('show')) panel.style.display = 'none'; }, 300);
+  selectedNode = null;
+}
+
+function researchTech(node) {
+  researched.add(node.id);
+  node.pulseActive = true;
+  node.pulsePhase = 0;
+
+  // Tell Worker to apply impulse + start pulse
+  physicsWorker.postMessage({ type: 'research', id: node.id });
+
+  openTechPanel(node);
+}
+
+// ============================================================
+// ЛЕГЕНДА
+// ============================================================
+document.getElementById('legendBtn').addEventListener('click', () => {
+  document.getElementById('legendPanel').classList.toggle('show');
+});
+
+// ============================================================
+// ПОИСК
+// ============================================================
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));
+  return dp[m][n];
+}
+
+function fuzzyScore(query, text) {
+  const q = query.toLowerCase(), t = text.toLowerCase();
+  if (t.includes(q)) return 100 - q.length;
+  if (q.length <= 5) {
+    const words = t.split(' ');
+    let best = Infinity;
+    words.forEach(w => { const d = levenshtein(q, w.substring(0, q.length+2)); if (d < best) best = d; });
+    return Math.max(0, 50 - best * 10);
+  }
+  let qi = 0, score = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) { score++; qi++; }
+  }
+  return qi === q.length ? score * 5 : 0;
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  if (!q) { searchResults.style.display = 'none'; return; }
+
+  const scored = TECHS.map(t => ({ tech: t, score: fuzzyScore(q, t.name) }))
+    .filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0, 8);
+
+  if (!scored.length) { searchResults.style.display = 'none'; return; }
+
+  searchResults.innerHTML = scored.map(s => `
+    <div class="search-result-item" data-id="${s.tech.id}">
+      <div class="dot" style="background:${getNodeColor(s.tech.id)}"></div>
+      <span>${s.tech.name}</span>
+      <span class="score">${Math.round(s.score)}%</span>
+    </div>`).join('');
+  searchResults.style.display = 'block';
+
+  searchResults.querySelectorAll('.search-result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const node = nodeMap.get(id);
+      if (node) {
+        camera.x = -node.x; camera.y = -node.y; camera.targetZoom = 1.3; camera.zoom = 1.3;
+        setTimeout(() => openTechPanel(node), 100);
+      }
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    });
+  });
+});
+
+// Single delegated click for search results hide
+document.addEventListener('click', e => {
+  if (!e.target.closest('#searchBox') && !e.target.closest('#searchResults'))
+    searchResults.style.display = 'none';
+  if (!e.target.closest('#filterPanel') && !e.target.closest('#filterStrip'))
+    filterSuggestions.classList.remove('show');
+}, { passive: true });
+
+// ============================================================
+// ФИЛЬТР
+// ============================================================
+const filterStrip = document.getElementById('filterStrip');
+const filterPanel = document.getElementById('filterPanel');
+const filterInput = document.getElementById('filterInput');
+const filterSuggestions = document.getElementById('filterSuggestions');
+const filterActiveTags = document.getElementById('filterActiveTags');
+
+let filterTab = 'tree';
+let filterHoverTimeout = null;
+
+function showFilterPanel() {
+  clearTimeout(filterHoverTimeout);
+  filterPanel.classList.add('visible');
+  filterStrip.classList.add('active');
+}
+function hideFilterPanel() {
+  filterHoverTimeout = setTimeout(() => {
+    filterPanel.classList.remove('visible');
+    filterStrip.classList.remove('active');
+  }, 180);
+}
+
+filterStrip.addEventListener('mouseenter', showFilterPanel, { passive: true });
+filterStrip.addEventListener('mouseleave', hideFilterPanel, { passive: true });
+filterPanel.addEventListener('mouseenter', showFilterPanel, { passive: true });
+filterPanel.addEventListener('mouseleave', hideFilterPanel, { passive: true });
+
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    filterTab = tab.dataset.tab;
+    filterInput.value = '';
+    filterSuggestions.classList.remove('show');
+    updateFilterPlaceholder();
+  });
+});
+
+function updateFilterPlaceholder() {
+  const placeholders = {
+    tree: 'Введите название дерева...',
+    subtree: 'Введите название под-дерева...',
+    group: 'Введите название технологии...'
+  };
+  filterInput.placeholder = placeholders[filterTab];
+}
+updateFilterPlaceholder();
+
+filterInput.addEventListener('input', () => {
+  const q = filterInput.value.trim().toLowerCase();
+  if (!q) { filterSuggestions.classList.remove('show'); return; }
+
+  let items = [];
+  if (filterTab === 'tree') {
+    items = Object.entries(TREES)
+      .filter(([k,v]) => v.name.toLowerCase().includes(q) || fuzzyScore(q, v.name) > 20)
+      .sort((a,b) => fuzzyScore(q, b[1].name) - fuzzyScore(q, a[1].name))
+      .map(([k,v]) => ({ id: k, label: v.name, color: v.color, sub: null }));
+  } else if (filterTab === 'subtree') {
+    items = Object.entries(SUBTREES)
+      .filter(([k,v]) => v.name.toLowerCase().includes(q) || fuzzyScore(q, v.name) > 20)
+      .sort((a,b) => fuzzyScore(q, b[1].name) - fuzzyScore(q, a[1].name))
+      .map(([k,v]) => ({ id: k, label: v.name, color: v.color, sub: TREES[v.tree].name }));
+  } else {
+    const groups = {};
+    TECHS.forEach(t => {
+      const base = t.name.replace(/\s+[IVXLCDM]+$/, '').replace(/\s+\d+$/, '').trim();
+      if (!groups[base]) groups[base] = { base, nodeIds: [], color: TREES[t.tree].color };
+      groups[base].nodeIds.push(t.id);
+    });
+    items = Object.values(groups)
+      .filter(g => g.base.toLowerCase().includes(q) || fuzzyScore(q, g.base) > 15)
+      .sort((a,b) => fuzzyScore(q, b.base) - fuzzyScore(q, a.base))
+      .slice(0, 10)
+      .map(g => ({ id: '_group_' + g.base, label: g.base, color: g.color, sub: `${g.nodeIds.length} тех.`, _nodeIds: g.nodeIds }));
+  }
+
+  if (!items.length) { filterSuggestions.classList.remove('show'); return; }
+
+  filterSuggestions.innerHTML = items.slice(0,8).map(item => `
+    <div class="filter-suggestion-item" data-id="${encodeURIComponent(item.id)}"
+      data-label="${encodeURIComponent(item.label)}"
+      data-color="${encodeURIComponent(item.color || '#aaa')}"
+      data-nodeids="${encodeURIComponent(JSON.stringify(item._nodeIds || []))}">
+      <div style="width:10px;height:10px;border-radius:50%;background:${item.color};flex-shrink:0"></div>
+      <span>${item.label}</span>
+      ${item.sub ? `<span class="fsub">${item.sub}</span>` : ''}
+    </div>`).join('');
+  filterSuggestions.classList.add('show');
+
+  filterSuggestions.querySelectorAll('.filter-suggestion-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = decodeURIComponent(el.dataset.id);
+      const label = decodeURIComponent(el.dataset.label);
+      const color = decodeURIComponent(el.dataset.color);
+      const nodeIdsOverride = JSON.parse(decodeURIComponent(el.dataset.nodeids));
+      applyFilter(id, label, color, nodeIdsOverride);
+      filterInput.value = '';
+      filterSuggestions.classList.remove('show');
+    });
+  });
+});
+
+function applyFilter(id, label, color, nodeIdsOverride) {
+  filterState.type = filterTab;
+
+  let ids = new Set();
+  if (nodeIdsOverride && nodeIdsOverride.length > 0) {
+    nodeIdsOverride.forEach(nid => ids.add(nid));
+  } else if (filterTab === 'tree') {
+    TECHS.filter(t => t.tree === id).forEach(t => ids.add(t.id));
+  } else if (filterTab === 'subtree') {
+    const st = SUBTREES[id];
+    if (st) st.nodeIds.forEach(nid => ids.add(nid));
+  }
+
+  filterState.ids.forEach(existing => ids.add(existing));
+  filterState.ids = ids;
+
+  renderFilterTags();
+}
+
+function renderFilterTags() {
+  if (filterState.ids.size === 0) {
+    filterActiveTags.innerHTML = '<span class="filter-status">Фильтр не активен — показаны все технологии</span>';
+    return;
+  }
+  const count = filterState.ids.size;
+  filterActiveTags.innerHTML = `
+    <div class="filter-tag">
+      <span>🔍 ${count} технологий выделено</span>
+      <span class="ftag-remove">✕</span>
+    </div>`;
+  filterActiveTags.querySelector('.filter-tag').addEventListener('click', resetFilter);
+}
+
+function resetFilter() {
+  filterState = { type: null, ids: new Set() };
+  filterInput.value = '';
+  filterSuggestions.classList.remove('show');
+  filterActiveTags.innerHTML = '<span class="filter-status">Фильтр не активен — показаны все технологии</span>';
+}
+
+// ============================================================
+// ЭКСПОРТ / ИМПОРТ
+// ============================================================
+function exportSave() {
+  const data = { version: VERSION, researched: Array.from(researched), exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'tech_tree_save.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importSave(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.researched && Array.isArray(data.researched)) {
+        if (data.version && data.version !== VERSION) {
+          if (!confirm(`Версия сохранения (${data.version}) не совпадает с текущей версией (${VERSION}). Все равно импортировать?`)) {
+            return;
+          }
+        }
+        researched = new Set(data.researched);
+        // Notify Worker to start pulses
+        physicsWorker.postMessage({ type: 'importResearch', ids: data.researched });
+        alert(`Импортировано ${researched.size} технологий.`);
+      } 
+    } catch (err) { alert('Ошибка: ' + err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// СТАРТ
+// ============================================================
+initNodes();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

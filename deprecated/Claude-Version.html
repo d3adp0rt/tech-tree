@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Древо технологий — Галактика</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #0a0c14; }
+  #canvas { display: block; cursor: grab; }
+  #canvas.dragging { cursor: grabbing; }
+
+  .ui-panel {
+    position: fixed; background: rgba(15,17,26,0.92); backdrop-filter: blur(16px);
+    border-radius: 14px; box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08); z-index: 10;
+  }
+
+  #searchBox {
+    top: 16px; left: 50%; transform: translateX(-50%);
+    padding: 11px 18px; width: 360px;
+  }
+  #searchBox input {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-size: 14px; color: #e8eaf0; letter-spacing: 0.2px;
+  }
+  #searchBox input::placeholder { color: #555; }
+
+  #legendBtn {
+    top: 16px; left: 16px; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold; cursor: pointer;
+    background: rgba(255,255,255,0.08); color: #aaa; border-radius: 12px;
+    transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+  }
+  #legendBtn:hover { background: rgba(255,255,255,0.14); color: #fff; transform: scale(1.05); }
+
+  #legendPanel {
+    top: 70px; left: 16px; padding: 18px 22px;
+    display: none; min-width: 280px;
+  }
+  #legendPanel.show { display: block; }
+  #legendPanel h3 { font-size: 11px; color: #666; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin: 9px 0; font-size: 13px; color: #aaa; }
+  .legend-line { width: 32px; height: 3px; border-radius: 2px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+  #ioPanel {
+    bottom: 24px; left: 16px; padding: 10px 14px;
+    display: flex; gap: 8px; z-index: 5;
+  }
+  .io-btn {
+    padding: 8px 14px; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.1); color: #ccc; font-size: 12px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .io-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+  #techPanel {
+    position: fixed; width: 350px; padding: 0;
+    display: none; z-index: 20; opacity: 0;
+    transform: scale(0.88) translateY(10px);
+    transition: opacity 0.28s cubic-bezier(0.34,1.56,0.64,1), transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+    background: rgba(12,14,22,0.97);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+  #techPanel.show { display: block; opacity: 1; transform: scale(1) translateY(0); }
+  #techPanel .panel-accent { height: 4px; width: 100%; }
+  #techPanel .panel-inner { padding: 20px 24px 22px; max-height: 75vh; overflow-y: auto; }
+  #techPanel .panel-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+  #techPanel .panel-dot { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; box-shadow: 0 0 8px currentColor; }
+  #techPanel .panel-title-area { flex: 1; }
+  #techPanel h2 { font-size: 18px; color: #f0f2f8; line-height: 1.25; font-weight: 700; }
+  #techPanel .tree-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; color: rgba(255,255,255,0.9); margin-top: 6px; font-weight: 600; opacity: 0.85;
+  }
+  #techPanel .subtree-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; margin-left: 4px; font-weight: 500;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  }
+  #techPanel .close-btn {
+    position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+    border: none; background: rgba(255,255,255,0.07); border-radius: 50%; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    color: #888; transition: all 0.15s;
+  }
+  #techPanel .close-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  #techPanel .section { margin: 14px 0; }
+  #techPanel .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 5px; font-weight: 700; }
+  #techPanel .section-text { font-size: 13px; color: #9aa; line-height: 1.6; }
+  #techPanel .missing-section { margin: 14px 0; padding: 12px 14px; background: rgba(231,76,60,0.08); border-radius: 10px; border-left: 3px solid #e74c3c; }
+  #techPanel .missing-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #e74c3c; margin-bottom: 6px; font-weight: 700; }
+  #techPanel .missing-list { list-style: none; padding: 0; }
+  #techPanel .missing-list li { font-size: 12px; color: #888; padding: 2px 0 2px 16px; position: relative; }
+  #techPanel .missing-list li::before { content: '✕'; position: absolute; left: 0; color: #e74c3c; font-size: 10px; top: 3px; }
+  #techPanel .research-btn {
+    margin-top: 18px; width: 100%; padding: 13px;
+    border: none; border-radius: 12px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.22s; letter-spacing: 0.4px;
+  }
+  #techPanel .research-btn.available { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; box-shadow: 0 4px 16px rgba(231,76,60,0.25); }
+  #techPanel .research-btn.available:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(231,76,60,0.4); }
+  #techPanel .research-btn.locked { background: rgba(255,255,255,0.05); color: #444; cursor: not-allowed; border: 1px solid rgba(255,255,255,0.06); }
+  #techPanel .research-btn.done { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; cursor: default; box-shadow: 0 4px 16px rgba(46,204,113,0.2); }
+
+  #searchResults {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    background: rgba(12,14,22,0.97); backdrop-filter: blur(16px);
+    border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.08); max-height: 300px; overflow-y: auto;
+    display: none; z-index: 20; min-width: 360px;
+  }
+  .search-result-item {
+    padding: 10px 18px; cursor: pointer; font-size: 13px; color: #bbb;
+    border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px;
+    transition: background 0.12s;
+  }
+  .search-result-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .search-result-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .search-result-item .score { margin-left: auto; font-size: 10px; color: #444; }
+
+  /* ===== FILTER PANEL ===== */
+  #filterStrip {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, rgba(80,80,120,0.4) 0%, rgba(120,80,120,0.5) 50%, rgba(80,80,120,0.4) 100%);
+    z-index: 100; cursor: pointer;
+    transition: height 0.2s, background 0.2s;
+  }
+  #filterStrip:hover, #filterStrip.active { height: 8px; background: linear-gradient(90deg, rgba(100,100,180,0.7) 0%, rgba(180,100,180,0.8) 50%, rgba(100,100,180,0.7) 100%); }
+
+  #filterPanel {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 210px;
+    background: rgba(8,10,18,0.97); backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+    z-index: 99;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.34,1.2,0.64,1);
+    padding: 16px 24px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #filterPanel.visible { transform: translateY(0); }
+
+  .filter-tabs { display: flex; gap: 4px; align-items: center; }
+  .filter-tab {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04); color: #555;
+    transition: all 0.18s; letter-spacing: 0.3px;
+  }
+  .filter-tab.active { background: rgba(255,255,255,0.12); color: #e8eaf0; border-color: rgba(255,255,255,0.2); }
+  .filter-tab:hover { color: #bbb; background: rgba(255,255,255,0.08); }
+
+  .filter-reset-btn {
+    margin-left: auto; padding: 6px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    border: 1px solid rgba(231,76,60,0.3); background: rgba(231,76,60,0.08);
+    color: #e74c3c; transition: all 0.18s;
+  }
+  .filter-reset-btn:hover { background: rgba(231,76,60,0.18); }
+
+  .filter-search-row { display: flex; gap: 8px; align-items: flex-start; }
+  .filter-input-wrap { position: relative; flex: 1; }
+  .filter-input-wrap input {
+    width: 100%; padding: 9px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #e8eaf0; font-size: 13px; outline: none;
+    transition: border-color 0.18s;
+  }
+  .filter-input-wrap input:focus { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
+  .filter-input-wrap input::placeholder { color: #444; }
+
+  .filter-suggestions {
+    position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+    background: rgba(12,14,22,0.98); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; max-height: 180px; overflow-y: auto;
+    display: none; z-index: 200;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+  }
+  .filter-suggestions.show { display: block; }
+  .filter-suggestion-item {
+    padding: 9px 14px; cursor: pointer; font-size: 12px; color: #aaa;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .filter-suggestion-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .filter-suggestion-item .fsub { font-size: 10px; color: #555; margin-left: auto; }
+
+  .filter-active-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; align-items: center; }
+  .filter-tag {
+    padding: 4px 10px 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #ddd;
+    transition: all 0.15s;
+  }
+  .filter-tag:hover { background: rgba(231,76,60,0.15); border-color: rgba(231,76,60,0.3); }
+  .filter-tag .ftag-remove { font-size: 12px; color: #777; line-height: 1; }
+  .filter-status { font-size: 11px; color: #444; }
+
+  #fileInput { display: none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="searchBox" class="ui-panel">
+  <input type="text" id="searchInput" placeholder="🔍 Поиск технологий..." autocomplete="off">
+</div>
+<div id="searchResults"></div>
+
+<div id="legendBtn" class="ui-panel">?</div>
+<div id="legendPanel" class="ui-panel">
+  <h3>Типы связей</h3>
+  <div class="legend-item"><div class="legend-line" style="background:#5b9bd5"></div> Прямая связь</div>
+  <div class="legend-item"><div class="legend-line" style="background:#e74c3c"></div> Непрямая связь</div>
+  <div class="legend-item"><div class="legend-line" style="background:#2ecc71"></div> Косвенная связь</div>
+  <h3 style="margin-top:14px">Состояния</h3>
+  <div class="legend-item"><div class="legend-dot" style="background:#333; border:2px dashed #555"></div> Заблокирована</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3498db; box-shadow:0 0 6px #3498db"></div> Доступна</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2ecc71; box-shadow:0 0 10px #ffe066"></div> Исследована</div>
+</div>
+
+<div id="ioPanel" class="ui-panel">
+  <button class="io-btn" onclick="exportSave()">💾 Экспорт</button>
+  <button class="io-btn" onclick="document.getElementById('fileInput').click()">📂 Импорт</button>
+  <input type="file" id="fileInput" accept=".json" onchange="importSave(event)">
+</div>
+
+<div id="techPanel">
+  <div class="panel-accent" id="tpAccent"></div>
+  <button class="close-btn" onclick="closeTechPanel()">✕</button>
+  <div class="panel-inner">
+    <div class="panel-header">
+      <div class="panel-dot" id="tpDot"></div>
+      <div class="panel-title-area">
+        <h2 id="tpName"></h2>
+        <div>
+          <div id="tpTag" class="tree-tag"></div>
+          <div id="tpSubTag" class="subtree-tag" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section"><div class="section-title">Что это</div><div class="section-text" id="tpWhat"></div></div>
+    <div class="section"><div class="section-title">Как выглядит</div><div class="section-text" id="tpAppearance"></div></div>
+    <div class="section"><div class="section-title">Что даёт</div><div class="section-text" id="tpGives"></div></div>
+    <div id="tpMissingWrap" class="missing-section" style="display:none">
+      <div class="missing-title">Не хватает</div>
+      <ul class="missing-list" id="tpMissingList"></ul>
+    </div>
+    <button class="research-btn" id="tpResearchBtn">Исследовать</button>
+  </div>
+</div>
+
+<!-- FILTER PANEL -->
+<div id="filterStrip"></div>
+<div id="filterPanel">
+  <div class="filter-tabs">
+    <div class="filter-tab active" data-tab="tree">По дереву</div>
+    <div class="filter-tab" data-tab="subtree">По под-дереву</div>
+    <div class="filter-tab" data-tab="group">По группе</div>
+    <button class="filter-reset-btn" onclick="resetFilter()">✕ Сброс</button>
+  </div>
+  <div class="filter-search-row">
+    <div class="filter-input-wrap">
+      <input type="text" id="filterInput" placeholder="Начните вводить название..." autocomplete="off">
+      <div class="filter-suggestions" id="filterSuggestions"></div>
+    </div>
+  </div>
+  <div class="filter-active-tags" id="filterActiveTags">
+    <span class="filter-status">Фильтр не активен — показаны все технологии</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ДАННЫЕ: ДЕРЕВЬЯ
+// ============================================================
+const TREES = {
+  space:    { name: "Космическая инженерия",   color: "#3498db" },
+  weapons:  { name: "Энергетика и вооружение", color: "#e74c3c" },
+  bio:      { name: "Биотехнологии",           color: "#2c9644" },
+  ai:       { name: "ИИ и кибернетика",        color: "#9b59b6" },
+  materials:{ name: "Материаловедение",        color: "#f39c12" }
+};
+
+// ============================================================
+// ДАННЫЕ: ПОДДЕРЕВЬЯ
+// ============================================================
+const SUBTREES = {
+  space_engines:   { name: "Двигатели",         tree: "space",     color: "#5dade2", nodeIds: ["sp_nav","sp_eng1","sp_eng2","sp_warp1","sp_warp2","sp_hyper"] },
+  space_hull:      { name: "Конструкция",        tree: "space",     color: "#2e86c1", nodeIds: ["sp_hull1","sp_hull2","sp_hull3","sp_yard"] },
+  space_life:      { name: "Жизнеобеспечение",  tree: "space",     color: "#1f618d", nodeIds: ["sp_life","sp_grav"] },
+  weapons_energy:  { name: "Энергетика",         tree: "weapons",   color: "#f1948a", nodeIds: ["wp_energy1","wp_energy2","wp_energy3"] },
+  weapons_guns:    { name: "Орудия",             tree: "weapons",   color: "#e74c3c", nodeIds: ["wp_laser1","wp_laser2","wp_plasma1","wp_plasma2","wp_kinetic"] },
+  weapons_defense: { name: "Защита",             tree: "weapons",   color: "#922b21", nodeIds: ["wp_shield1","wp_shield2","wp_shield3","wp_pds"] },
+  bio_genetics:    { name: "Генетика",           tree: "bio",       color: "#58d68d", nodeIds: ["bio_genetics","bio_therapy","bio_bioeng1","bio_bioeng2","bio_clone"] },
+  bio_neuro:       { name: "Нейро",              tree: "bio",       color: "#1e8449", nodeIds: ["bio_neuro1","bio_neuro2","bio_hive"] },
+  bio_synth:       { name: "Синтез",             tree: "bio",       color: "#0b5345", nodeIds: ["bio_cryo","bio_immune","bio_synth","bio_bioship"] },
+  ai_core:         { name: "Базовый ИИ",         tree: "ai",        color: "#c39bd3", nodeIds: ["ai_basic","ai_ml","ai_neuro1","ai_neuro2","ai_network","ai_singularity"] },
+  ai_cyber:        { name: "Кибернетика",        tree: "ai",        color: "#8e44ad", nodeIds: ["ai_cyber1","ai_cyber2","ai_digital"] },
+  ai_drones:       { name: "Дроны",              tree: "ai",        color: "#6c3483", nodeIds: ["ai_drone","ai_swarm"] },
+  ai_quantum_sub:  { name: "Квантовый",          tree: "ai",        color: "#4a235a", nodeIds: ["ai_quantum"] },
+  mt_metals:       { name: "Металлургия",        tree: "materials", color: "#f9e79f", nodeIds: ["mt_metallurgy","mt_alloy1","mt_alloy2"] },
+  mt_nano:         { name: "Нано",               tree: "materials", color: "#f39c12", nodeIds: ["mt_nano1","mt_nano2","mt_quantum","mt_assembler"] },
+  mt_industry:     { name: "Производство",       tree: "materials", color: "#a04000", nodeIds: ["mt_factory1","mt_factory2","mt_automate","mt_mining1","mt_mining2"] },
+};
+
+function getNodeSubtree(nodeId) {
+  for (const [key, st] of Object.entries(SUBTREES)) {
+    if (st.nodeIds.includes(nodeId)) return { key, ...st };
+  }
+  return null;
+}
+
+function getNodeColor(node) {
+  const sub = getNodeSubtree(node.id);
+  return sub ? sub.color : TREES[node.tree].color;
+}
+
+// ============================================================
+// ДАННЫЕ: ТЕХНОЛОГИИ
+// ============================================================
+const LEVEL_ROMAN = ["I","II","III","IV","V","VI"];
+
+const TECHS = [
+  { id:"sp_nav",       name:"Базовая навигация",          tree:"space",    level:0, deps:[],
+    desc:{ what:"Фундаментальная система определения положения корабля в пространстве.", appearance:"Голографический дисплей с картой звёздного неба и векторами движения.", gives:"Открывает доступ ко всем космическим технологиям." }},
+  { id:"sp_eng1",      name:"Ионный двигатель I",         tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Первый практический космический двигатель на ионной тяге.", appearance:"Цилиндрический модуль с синим свечением выхлопа.", gives:"Позволяет строить корабли для межпланетных перелётов." }},
+  { id:"sp_eng2",      name:"Ионный двигатель II",        tree:"space",    level:2, deps:[{id:"sp_eng1",type:"direct"}],
+    desc:{ what:"Усиленная версия ионного двигателя с удвоенной тягой.", appearance:"Сдвоенные реактивные кольца с интенсивным голубым пламенем.", gives:"Увеличивает скорость кораблей на 40%." }},
+  { id:"sp_warp1",     name:"Варп-двигатель I",           tree:"space",    level:3, deps:[{id:"sp_eng2",type:"direct"},{id:"wp_energy2",type:"indirect"}],
+    desc:{ what:"Двигатель, искривляющий пространство для сверхсветового движения.", appearance:"Массивное кольцо вокруг кормы корабля, искажающее свет вокруг.", gives:"Открывает межзвёздные перелёты." }},
+  { id:"sp_warp2",     name:"Варп-двигатель II",          tree:"space",    level:4, deps:[{id:"sp_warp1",type:"direct"}],
+    desc:{ what:"Улучшенный варп-двигатель с повышенной стабильностью пузыря.", appearance:"Двойное кольцо с пульсирующей энергией между ними.", gives:"Увеличивает дальность варп-прыжков в 3 раза." }},
+  { id:"sp_hyper",     name:"Гипердвигатель",             tree:"space",    level:5, deps:[{id:"sp_warp2",type:"direct"},{id:"mt_quantum",type:"indirect"}],
+    desc:{ what:"Двигатель, использующий гиперпространство для мгновенных прыжков.", appearance:"Сферический модуль с вращающимися кольцами и белой вспышкой при активации.", gives:"Мгновенные прыжки между звёздными системами." }},
+  { id:"sp_hull1",     name:"Корпус корабля I",           tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Базовая конструкция космического корабля.", appearance:"Металлический каркас с герметичными отсеками.", gives:"Позволяет строить фрегаты и корветы." }},
+  { id:"sp_hull2",     name:"Корпус корабля II",          tree:"space",    level:2, deps:[{id:"sp_hull1",type:"direct"}],
+    desc:{ what:"Усиленный корпус для боевых кораблей среднего класса.", appearance:"Многослойная броня с внутренним каркасом из композитов.", gives:"Позволяет строить эсминцы и лёгкие крейсера." }},
+  { id:"sp_hull3",     name:"Корпус корабля III",         tree:"space",    level:3, deps:[{id:"sp_hull2",type:"direct"},{id:"mt_alloy2",type:"indirect"}],
+    desc:{ what:"Тяжёлый бронированный корпус для линкоров.", appearance:"Массивная многоуровневая конструкция с усиленными переборками.", gives:"Позволяет строить линкоры и тяжёлые крейсера." }},
+  { id:"sp_life",      name:"Системы жизнеобеспечения",   tree:"space",    level:1, deps:[{id:"sp_nav",type:"direct"}],
+    desc:{ what:"Комплекс систем поддержания жизни экипажа.", appearance:"Набор модулей с зелёными индикаторами и циркуляционными трубами.", gives:"Позволяет длительные космические миссии." }},
+  { id:"sp_grav",      name:"Гравитационный генератор",   tree:"space",    level:3, deps:[{id:"sp_life",type:"direct"},{id:"ai_neuro2",type:"indirect"}],
+    desc:{ what:"Устройство создания искусственной гравитации.", appearance:"Вращающийся диск в центре корабля с голубым свечением.", gives:"Комфортные условия для экипажа, бонус к эффективности." }},
+  { id:"sp_yard",      name:"Космическая верфь",          tree:"space",    level:4, deps:[{id:"sp_hull3",type:"direct"},{id:"mt_factory2",type:"indirect"}],
+    desc:{ what:"Орбитальная станция для строительства крупных кораблей.", appearance:"Гигантская конструкция с доками, кранами и стапелями.", gives:"Позволяет строить дредноуты и станции." }},
+
+  { id:"wp_energy1",   name:"Энергоячейка I",             tree:"weapons",  level:0, deps:[],
+    desc:{ what:"Базовый источник энергии для корабельных систем.", appearance:"Кубический модуль с янтарным свечением внутри.", gives:"Открывает доступ к вооружению." }},
+  { id:"wp_energy2",   name:"Энергоячейка II",            tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Усиленный реактор с двойной мощностью.", appearance:"Цилиндрический реактор с пульсирующим оранжевым ядром.", gives:"Питание для продвинутого оружия и щитов." }},
+  { id:"wp_energy3",   name:"Энергоячейка III",           tree:"weapons",  level:2, deps:[{id:"wp_energy2",type:"direct"}],
+    desc:{ what:"Термоядерный реактор нового поколения.", appearance:"Сферическая камера удержания плазмы с магнитными кольцами.", gives:"Максимальная энерговооружённость корабля." }},
+  { id:"wp_laser1",    name:"Лазерная турель I",          tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Базовое лазерное оружие точечного поражения.", appearance:"Вращающаяся турель с излучателем и системой охлаждения.", gives:"Эффективна против лёгких целей." }},
+  { id:"wp_laser2",    name:"Лазерная турель II",         tree:"weapons",  level:2, deps:[{id:"wp_laser1",type:"direct"}],
+    desc:{ what:"Мощный лазер с повышенной пробивной способностью.", appearance:"Двойной излучатель с усиленной системой фокусировки.", gives:"Урон увеличен на 60%." }},
+  { id:"wp_plasma1",   name:"Плазменная пушка I",         tree:"weapons",  level:2, deps:[{id:"wp_energy2",type:"direct"}],
+    desc:{ what:"Орудие, стреляющее сгустками перегретой плазмы.", appearance:"Массивный ствол с магнитными ускорителями и зелёным свечением.", gives:"Высокий урон по броне." }},
+  { id:"wp_plasma2",   name:"Плазменная пушка II",        tree:"weapons",  level:3, deps:[{id:"wp_plasma1",type:"direct"}],
+    desc:{ what:"Тяжёлая плазменная артиллерия.", appearance:"Двойной ствол с системой перезарядки и охлаждающими контурами.", gives:"Критический урон по крупным кораблям." }},
+  { id:"wp_kinetic",   name:"Кинетическое орудие",        tree:"weapons",  level:2, deps:[{id:"wp_energy1",type:"direct"},{id:"mt_alloy1",type:"indirect"}],
+    desc:{ what:"Рельсотрон, разгоняющий снаряды до гиперскоростей.", appearance:"Длинный ствол с рельсами-ускорителями и системой подачи снарядов.", gives:"Игнорирует энергетические щиты." }},
+  { id:"wp_shield1",   name:"Щиты I",                     tree:"weapons",  level:1, deps:[{id:"wp_energy1",type:"direct"}],
+    desc:{ what:"Базовый энергетический щит корабля.", appearance:"Полупрозрачная голубая сфера вокруг корабля.", gives:"Поглощает 30% входящего урона." }},
+  { id:"wp_shield2",   name:"Щиты II",                    tree:"weapons",  level:2, deps:[{id:"wp_shield1",type:"direct"},{id:"mt_nano1",type:"indirect"}],
+    desc:{ what:"Усиленный многослойный щит.", appearance:"Двойная сфера с переливающимися слоями энергии.", gives:"Поглощает 55% урона." }},
+  { id:"wp_shield3",   name:"Щиты III",                   tree:"weapons",  level:3, deps:[{id:"wp_shield2",type:"direct"}],
+    desc:{ what:"Максимальная защита энергетическим барьером.", appearance:"Плотная сияющая сфера с шестиугольным паттерном.", gives:"Поглощает 75% урона." }},
+  { id:"wp_pds",       name:"Точечная защита",            tree:"weapons",  level:2, deps:[{id:"wp_laser1",type:"direct"},{id:"ai_drone",type:"cosvennaya"}],
+    desc:{ what:"Автоматическая система перехвата ракет и снарядов.", appearance:"Массив мелких турелей по всему корпусу корабля.", gives:"Автоматически сбивает ракеты и торпеды." }},
+
+  { id:"bio_genetics", name:"Базовая генетика",           tree:"bio",      level:0, deps:[],
+    desc:{ what:"Фундаментальные знания о ДНК и генной инженерии.", appearance:"Лаборатория с секвенаторами и голографическими моделями ДНК.", gives:"Открывает доступ к биотехнологиям." }},
+  { id:"bio_therapy",  name:"Генная терапия",             tree:"bio",      level:1, deps:[{id:"bio_genetics",type:"direct"}],
+    desc:{ what:"Лечение и улучшение организма на генетическом уровне.", appearance:"Медицинский модуль с инъекторами и биосканерами.", gives:"Увеличивает здоровье экипажа на 25%." }},
+  { id:"bio_cryo",     name:"Криогенный сон",             tree:"bio",      level:1, deps:[{id:"bio_genetics",type:"direct"}],
+    desc:{ what:"Технология заморозки людей для длительных перелётов.", appearance:"Капсулы с прозрачными крышками и голубой жидкостью внутри.", gives:"Позволяет межзвёздные миссии без старения экипажа." }},
+  { id:"bio_bioeng1",  name:"Биоинженерия I",             tree:"bio",      level:2, deps:[{id:"bio_therapy",type:"direct"}],
+    desc:{ what:"Создание улучшенных организмов для различных задач.", appearance:"Биолаборатория с инкубаторами и генетическими принтерами.", gives:"Улучшенные культуры и рабочие организмы." }},
+  { id:"bio_bioeng2",  name:"Биоинженерия II",            tree:"bio",      level:3, deps:[{id:"bio_bioeng1",type:"direct"}],
+    desc:{ what:"Продвинутая генетическая модификация сложных организмов.", appearance:"Автоматизированный биокомплекс с нейронными интерфейсами.", gives:"Создание специализированных биоформ." }},
+  { id:"bio_immune",   name:"Адаптивный иммунитет",       tree:"bio",      level:2, deps:[{id:"bio_therapy",type:"direct"}],
+    desc:{ what:"Искусственная иммунная система, адаптирующаяся к любым угрозам.", appearance:"Наноботы в крови, видимые как серебристая сеть под кожей.", gives:"Полная защита от биологического оружия." }},
+  { id:"bio_neuro1",   name:"Нейроинтерфейс I",           tree:"bio",      level:2, deps:[{id:"bio_genetics",type:"direct"},{id:"ai_ml",type:"indirect"}],
+    desc:{ what:"Прямое соединение мозга с компьютерными системами.", appearance:"Имплант у основания черепа с оптоволоконными нитями.", gives:"Управление кораблём силой мысли." }},
+  { id:"bio_neuro2",   name:"Нейроинтерфейс II",          tree:"bio",      level:3, deps:[{id:"bio_neuro1",type:"direct"}],
+    desc:{ what:"Полноценное слияние сознания с ИИ-системами.", appearance:"Нейронная сеть, покрывающая кору мозга, с внешним процессором.", gives:"Мгновенная реакция и обработка информации." }},
+  { id:"bio_clone",    name:"Клонирование",               tree:"bio",      level:3, deps:[{id:"bio_bioeng2",type:"direct"}],
+    desc:{ what:"Создание генетических копий организмов.", appearance:"Ряд биокапсул с растущими эмбрионами и питательной средой.", gives:"Быстрое пополнение экипажа и войск." }},
+  { id:"bio_synth",    name:"Синтетическая биология",     tree:"bio",      level:4, deps:[{id:"bio_bioeng2",type:"direct"},{id:"mt_nano2",type:"indirect"}],
+    desc:{ what:"Создание полностью искусственных организмов.", appearance:"Биореакторы с искусственными клетками и программируемой ДНК.", gives:"Организмы с заданными свойствами." }},
+  { id:"bio_bioship",  name:"Био-корабль",                tree:"bio",      level:5, deps:[{id:"bio_synth",type:"direct"},{id:"ai_neuro2",type:"indirect"}],
+    desc:{ what:"Живой корабль, выращенный из биоматериалов.", appearance:"Органическая структура с пульсирующими венами и био-мембраной вместо корпуса.", gives:"Самовосстанавливающийся корабль." }},
+  { id:"bio_hive",     name:"Коллективный разум",         tree:"bio",      level:5, deps:[{id:"bio_clone",type:"direct"},{id:"ai_network",type:"indirect"}],
+    desc:{ what:"Связь сознаний всех членов колонии в единую сеть.", appearance:"Нейронная сеть, соединяющая всех участников через био-релейные узлы.", gives:"Идеальная координация флота." }},
+
+  { id:"ai_basic",     name:"Базовый ИИ",                 tree:"ai",       level:0, deps:[],
+    desc:{ what:"Простейший искусственный интеллект для автоматизации.", appearance:"Серверная стойка с мигающими индикаторами и голографическим ядром.", gives:"Открывает доступ к кибернетике." }},
+  { id:"ai_ml",        name:"Машинное обучение",          tree:"ai",       level:1, deps:[{id:"ai_basic",type:"direct"}],
+    desc:{ what:"Системы, способные обучаться на данных.", appearance:"Нейронная визуализация с узлами и связями, постоянно перестраивающаяся.", gives:"Улучшает все автоматизированные системы." }},
+  { id:"ai_neuro1",    name:"Нейросеть I",                tree:"ai",       level:2, deps:[{id:"ai_ml",type:"direct"}],
+    desc:{ what:"Первое поколение глубоких нейронных сетей.", appearance:"Трёхмерная структура из светящихся узлов и связей.", gives:"Распознавание образов и предсказание." }},
+  { id:"ai_neuro2",    name:"Нейросеть II",               tree:"ai",       level:3, deps:[{id:"ai_neuro1",type:"direct"}],
+    desc:{ what:"Продвинутая нейросеть с самообучением.", appearance:"Плотная светящаяся сфера из миллиардов связей.", gives:"Автономное принятие решений." }},
+  { id:"ai_drone",     name:"Автономный дрон",            tree:"ai",       level:2, deps:[{id:"ai_ml",type:"direct"},{id:"mt_alloy1",type:"indirect"}],
+    desc:{ what:"Беспилотный летательный аппарат с ИИ.", appearance:"Компактный дрон с камерами и манипуляторами.", gives:"Разведка и поддержка без экипажа." }},
+  { id:"ai_cyber1",    name:"Кибернетика I",              tree:"ai",       level:2, deps:[{id:"ai_basic",type:"direct"},{id:"bio_neuro1",type:"indirect"}],
+    desc:{ what:"Базовые кибернетические улучшения тела.", appearance:"Металлические импланты с портами подключения под кожей.", gives:"Улучшенные рефлексы и сила." }},
+  { id:"ai_cyber2",    name:"Кибернетика II",             tree:"ai",       level:3, deps:[{id:"ai_cyber1",type:"direct"}],
+    desc:{ what:"Продвинутые кибернетические модификации.", appearance:"Полностью механические конечности и органы с ИИ-управлением.", gives:"Значительное улучшение всех характеристик." }},
+  { id:"ai_quantum",   name:"Квантовый компьютер",        tree:"ai",       level:3, deps:[{id:"ai_neuro2",type:"direct"},{id:"mt_quantum",type:"indirect"}],
+    desc:{ what:"Компьютер, использующий квантовые эффекты для вычислений.", appearance:"Криогенная установка с кубитами в центре, окружённая лазерами.", gives:"Экспоненциальный рост вычислительной мощности." }},
+  { id:"ai_network",   name:"Сетевой интеллект",          tree:"ai",       level:4, deps:[{id:"ai_neuro2",type:"direct"}],
+    desc:{ what:"Объединение множества ИИ в единую сеть.", appearance:"Глобальная сеть светящихся узлов, охватывающая всю цивилизацию.", gives:"Координация всех систем империи." }},
+  { id:"ai_singularity",name:"Сингулярность ИИ",          tree:"ai",       level:5, deps:[{id:"ai_quantum",type:"direct"},{id:"ai_network",type:"direct"}],
+    desc:{ what:"Момент, когда ИИ превосходит человеческий разум.", appearance:"Сфера чистой энергии, излучающая невыразимый свет.", gives:"Неограниченные вычислительные возможности." }},
+  { id:"ai_digital",   name:"Цифровое сознание",          tree:"ai",       level:5, deps:[{id:"ai_singularity",type:"direct"},{id:"bio_neuro2",type:"indirect"}],
+    desc:{ what:"Перенос сознания в цифровую форму.", appearance:"Голографическая проекция человека из световых частиц.", gives:"Бессмертие в цифровой форме." }},
+  { id:"ai_swarm",     name:"Рой дронов",                 tree:"ai",       level:4, deps:[{id:"ai_drone",type:"direct"},{id:"ai_network",type:"cosvennaya"}],
+    desc:{ what:"Тысячи дронов, действующих как единый организм.", appearance:"Облако мелких дронов, формирующих различные структуры.", gives:"Массированные автоматизированные атаки." }},
+
+  { id:"mt_metallurgy",name:"Базовая металлургия",        tree:"materials",level:0, deps:[],
+    desc:{ what:"Основы обработки металлов и сплавов.", appearance:"Плавильные печи и кузнечные молоты нового поколения.", gives:"Открывает доступ к материаловедению." }},
+  { id:"mt_alloy1",    name:"Сплавы I",                   tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Улучшенные металлические сплавы для промышленности.", appearance:"Слитки с характерным блеском и маркировкой состава.", gives:"Улучшенная броня и конструкции." }},
+  { id:"mt_alloy2",    name:"Сплавы II",                  tree:"materials",level:2, deps:[{id:"mt_alloy1",type:"direct"}],
+    desc:{ what:"Высокопрочные композитные сплавы.", appearance:"Тёмные металлические пластины с видимой кристаллической структурой.", gives:"Броня для тяжёлых кораблей." }},
+  { id:"mt_nano1",     name:"Наноматериалы I",            tree:"materials",level:2, deps:[{id:"mt_alloy1",type:"direct"}],
+    desc:{ what:"Материалы, созданные на атомном уровне.", appearance:"Чёрная жидкость, меняющая форму по команде.", gives:"Улучшенные щиты и броня." }},
+  { id:"mt_nano2",     name:"Наноматериалы II",           tree:"materials",level:3, deps:[{id:"mt_nano1",type:"direct"}],
+    desc:{ what:"Программируемая наноматерия.", appearance:"Рой наноботов, формирующих любые структуры.", gives:"Самовосстанавливающиеся материалы." }},
+  { id:"mt_quantum",   name:"Квантовые материалы",        tree:"materials",level:3, deps:[{id:"mt_nano1",type:"direct"},{id:"ai_neuro1",type:"indirect"}],
+    desc:{ what:"Материалы с квантовыми свойствами.", appearance:"Полупрозрачные кристаллы, светящиеся изнутри.", gives:"Ключ к квантовым технологиям." }},
+  { id:"mt_factory1",  name:"Фабрика I",                  tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Базовое производственное предприятие.", appearance:"Автоматизированный завод с конвейерами и роботами.", gives:"Массовое производство." }},
+  { id:"mt_factory2",  name:"Фабрика II",                 tree:"materials",level:2, deps:[{id:"mt_factory1",type:"direct"}],
+    desc:{ what:"Продвинутое производство с ИИ-управлением.", appearance:"Полностью автоматизированный комплекс без людей внутри.", gives:"Ускоренное производство кораблей." }},
+  { id:"mt_automate",  name:"Автоматизация",              tree:"materials",level:3, deps:[{id:"mt_factory2",type:"direct"},{id:"ai_ml",type:"indirect"}],
+    desc:{ what:"Полная автоматизация всех производственных процессов.", appearance:"Заводы, управляемые ИИ, работающие 24/7 без остановок.", gives:"Максимальная скорость производства." }},
+  { id:"mt_assembler", name:"Молекулярный ассемблер",     tree:"materials",level:4, deps:[{id:"mt_nano2",type:"direct"},{id:"mt_automate",type:"direct"}],
+    desc:{ what:"Устройство, собирающее объекты из атомов.", appearance:"Камера с манипуляторами атомарного уровня и голографическим проектором.", gives:"Создание чего угодно из сырья." }},
+  { id:"mt_mining1",   name:"Добыча ресурсов I",          tree:"materials",level:1, deps:[{id:"mt_metallurgy",type:"direct"}],
+    desc:{ what:"Базовые технологии добычи полезных ископаемых.", appearance:"Буровые установки и добывающие дроны.", gives:"Доступ к ресурсам астероидов." }},
+  { id:"mt_mining2",   name:"Добыча ресурсов II",         tree:"materials",level:2, deps:[{id:"mt_mining1",type:"direct"}],
+    desc:{ what:"Продвинутая добыча, включая газовые гиганты.", appearance:"Орбитальные платформы и атмосферные сборщики.", gives:"Добыча на планетах и в атмосферах." }},
+];
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let nodes = [];
+let edges = [];
+let researched = new Set();
+let camera = { x: 0, y: 0, zoom: 1, targetZoom: 1 };
+let draggingNode = null;
+let dragStart = { x:0, y:0 };
+let panning = false;
+let panStart = { x:0, y:0 };
+let cameraStart = { x:0, y:0 };
+let selectedNode = null;
+let hoveredNode = null;
+let animPhase = 0;
+let animStartTime = 0;
+let physicsRunning = true;
+let time = 0;
+
+// Filter state
+let filterState = { type: null, ids: new Set() };
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initNodes() {
+  const treeKeys = Object.keys(TREES);
+  const centerX = W / 2;
+  const centerY = H / 2;
+  const radius = Math.min(W, H) * 0.32;
+
+  const treeCenters = {};
+  treeKeys.forEach((key, i) => {
+    const angle = (i / treeKeys.length) * Math.PI * 2 - Math.PI / 2;
+    treeCenters[key] = {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius
+    };
+  });
+
+  const grouped = {};
+  treeKeys.forEach(k => grouped[k] = {});
+  TECHS.forEach(t => {
+    if (!grouped[t.tree][t.level]) grouped[t.tree][t.level] = [];
+    grouped[t.tree][t.level].push(t);
+  });
+
+  TECHS.forEach(t => {
+    const tc = treeCenters[t.tree];
+    const levelNodes = grouped[t.tree][t.level] || [];
+    const idx = levelNodes.indexOf(t);
+    const count = levelNodes.length;
+    const levelRadius = 70 + t.level * 100;
+    const angle = (idx / count) * Math.PI * 2 + t.level * 0.4;
+    const x = tc.x + Math.cos(angle) * levelRadius;
+    const y = tc.y + Math.sin(angle) * levelRadius;
+
+    nodes.push({
+      id: t.id,
+      x: x, y: y,
+      vx: 0, vy: 0,
+      tree: t.tree,
+      level: t.level,
+      scale: 0,
+      targetScale: 1,
+      displayScale: 0,
+      pulsePhase: 0,
+      pulseActive: false,
+      appearDelay: t.level * 0.5 + Math.random() * 0.25
+    });
+  });
+
+  TECHS.forEach(t => {
+    t.deps.forEach(d => {
+      edges.push({ from: d.id, to: t.id, type: d.type });
+    });
+  });
+
+  animStartTime = performance.now();
+}
+
+// ============================================================
+// ФИЗИКА
+// ============================================================
+function simulate(dt) {
+  if (!physicsRunning) return;
+
+  const REPULSION = 13000;
+  const SPRING = 0.011;
+  const SPRING_LEN = 165;
+  const CENTER_FORCE = 0.0007;
+  const DAMPING = 0.86;
+  const JITTER = 0.1;
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      let force = REPULSION / (dist * dist);
+      let fx = (dx / dist) * force;
+      let fy = (dy / dist) * force;
+      a.vx -= fx * dt; a.vy -= fy * dt;
+      b.vx += fx * dt; b.vy += fy * dt;
+    }
+  }
+
+  edges.forEach(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    let force = (dist - SPRING_LEN) * SPRING;
+    let fx = (dx / dist) * force;
+    let fy = (dy / dist) * force;
+    a.vx += fx * dt; a.vy += fy * dt;
+    b.vx -= fx * dt; b.vy -= fy * dt;
+  });
+
+  const treeKeys = Object.keys(TREES);
+  const cx = W/2, cy = H/2;
+  const radius = Math.min(W,H) * 0.32;
+  treeKeys.forEach((key, i) => {
+    const angle = (i / treeKeys.length) * Math.PI * 2 - Math.PI/2;
+    const tcx = cx + Math.cos(angle) * radius;
+    const tcy = cy + Math.sin(angle) * radius;
+    nodes.filter(n => n.tree === key).forEach(n => {
+      n.vx += (tcx - n.x) * CENTER_FORCE * dt;
+      n.vy += (tcy - n.y) * CENTER_FORCE * dt;
+      if (animPhase >= 1) {
+        n.vx += (Math.random() - 0.5) * JITTER * dt;
+        n.vy += (Math.random() - 0.5) * JITTER * dt;
+      }
+    });
+  });
+
+  nodes.forEach(n => {
+    if (n === draggingNode) return;
+    n.vx *= DAMPING;
+    n.vy *= DAMPING;
+    n.x += n.vx * dt;
+    n.y += n.vy * dt;
+  });
+
+  const elapsed = (performance.now() - animStartTime) / 1000;
+  animPhase = Math.min(1, elapsed / 4);
+
+  nodes.forEach(n => {
+    if (elapsed > n.appearDelay) {
+      // Overshoot spring animation
+      const diff = n.targetScale - n.scale;
+      n.scale += diff * 0.13 + (n.scale > n.targetScale + 0.01 ? -0.002 : 0);
+      if (n.scale > 1.15) n.scale = 1.15;
+    }
+    // Smooth display scale with hover
+    const isHovered = n === hoveredNode;
+    const target = isHovered ? 1.1 : n.scale;
+    n.displayScale = n.displayScale + (target - n.displayScale) * 0.15;
+  });
+
+  nodes.forEach(n => {
+    if (n.pulseActive) {
+      n.pulsePhase += dt * 2.5;
+      if (n.pulsePhase > Math.PI * 2) {
+        n.pulseActive = false;
+        n.pulsePhase = 0;
+      }
+    }
+  });
+
+  // Smooth zoom
+  camera.zoom += (camera.targetZoom - camera.zoom) * 0.12;
+}
+
+// ============================================================
+// ХЕЛПЕРЫ
+// ============================================================
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx + camera.x) * camera.zoom + W/2,
+    y: (wy + camera.y) * camera.zoom + H/2
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - W/2) / camera.zoom - camera.x,
+    y: (sy - H/2) / camera.zoom - camera.y
+  };
+}
+
+function isNodeAvailable(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return false;
+  if (tech.deps.length === 0) return true;
+  for (const d of tech.deps) {
+    if (!researched.has(d.id)) return false;
+  }
+  return true;
+}
+
+function getMissingDeps(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return [];
+  return tech.deps
+    .filter(d => !researched.has(d.id))
+    .map(d => {
+      const depTech = TECHS.find(t => t.id === d.id);
+      return { name: depTech ? depTech.name : d.id, type: d.type };
+    });
+}
+
+function getNodeRadius(n) { return 38; }
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+
+function isNodeFiltered(nodeId) {
+  if (!filterState.type || filterState.ids.size === 0) return true;
+  return filterState.ids.has(nodeId);
+}
+
+// ============================================================
+// РЕНДЕРИНГ
+// ============================================================
+function drawGrid() {
+  ctx.save();
+  const spacing = 44 * camera.zoom;
+  const offsetX = ((camera.x * camera.zoom) % spacing + spacing) % spacing;
+  const offsetY = ((camera.y * camera.zoom) % spacing + spacing) % spacing;
+  for (let x = offsetX; x < W; x += spacing) {
+    for (let y = offsetY; y < H; y += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+      const vary = 0.05 + Math.random() * 0.05;
+      ctx.fillStyle = `rgba(255,255,255,${vary})`;
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawEdges() {
+  edges.forEach(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    if (a.scale < 0.1 || b.scale < 0.1) return;
+
+    const filteredA = isNodeFiltered(a.id);
+    const filteredB = isNodeFiltered(b.id);
+    const edgeVisible = filteredA && filteredB;
+
+    const sa = worldToScreen(a.x, a.y);
+    const sb = worldToScreen(b.x, b.y);
+
+    const isResA = researched.has(a.id);
+    const isResB = researched.has(b.id);
+    const bothRes = isResA && isResB;
+
+    let colorBase;
+    if (e.type === 'direct') colorBase = '#4a9fd5';
+    else if (e.type === 'indirect') colorBase = '#e05050';
+    else colorBase = '#3dbb77';
+
+    const dx = sb.x - sa.x, dy = sb.y - sa.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ux = dx/dist, uy = dy/dist;
+
+    const aRadius = getNodeRadius(a) * camera.zoom * a.displayScale;
+    const bRadius = getNodeRadius(b) * camera.zoom * b.displayScale;
+    const startX = sa.x + ux * aRadius;
+    const startY = sa.y + uy * aRadius;
+    const endX = sb.x - ux * bRadius;
+    const endY = sb.y - uy * bRadius;
+
+    const grad = ctx.createLinearGradient(startX, startY, endX, endY);
+    const alpha = edgeVisible ? (bothRes ? 0.85 : 0.45) : 0.04;
+    const rgb = hexToRgb(colorBase);
+    grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+    grad.addColorStop(0.2, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`);
+    grad.addColorStop(0.8, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`);
+    grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = bothRes ? 3 * camera.zoom : 2 * camera.zoom;
+    ctx.stroke();
+
+    // Arrow
+    if (edgeVisible) {
+      const arrowLen = 11 * camera.zoom;
+      const arrowAngle = 0.42;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX - arrowLen * Math.cos(angle - arrowAngle), endY - arrowLen * Math.sin(angle - arrowAngle));
+      ctx.lineTo(endX - arrowLen * Math.cos(angle + arrowAngle), endY - arrowLen * Math.sin(angle + arrowAngle));
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${bothRes ? 0.9 : 0.6})`;
+      ctx.fill();
+    }
+  });
+}
+
+function drawNodes() {
+  const now = Date.now();
+
+  nodes.forEach(n => {
+    if (n.displayScale < 0.01) return;
+    const s = worldToScreen(n.x, n.y);
+    const baseR = getNodeRadius(n) * camera.zoom * n.displayScale;
+    const color = getNodeColor(n);
+    const available = isNodeAvailable(n);
+    const isResearched = researched.has(n.id);
+    const tech = TECHS.find(t => t.id === n.id);
+    const filtered = isNodeFiltered(n.id);
+    const rgb = hexToRgb(color);
+
+    ctx.save();
+    if (!filtered) ctx.globalAlpha = 0.07;
+
+    // Yellow glow for researched
+    if (isResearched && filtered) {
+      const glowPulse = 14 + Math.sin(now / 900) * 8;
+      ctx.save();
+      ctx.shadowColor = '#ffe066';
+      ctx.shadowBlur = glowPulse * camera.zoom;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, baseR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,224,102,0.12)`;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Pulse ring
+    if (n.pulseActive) {
+      const pulseR = baseR + Math.sin(n.pulsePhase) * 20 * camera.zoom;
+      const pulseAlpha = 0.18 * (1 - n.pulsePhase / (Math.PI * 2));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${pulseAlpha})`;
+      ctx.fill();
+    }
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(s.x, s.y + 4 * camera.zoom, baseR * 0.95, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    // Main circle with radial gradient
+    const grad = ctx.createRadialGradient(
+      s.x - baseR * 0.25, s.y - baseR * 0.25, baseR * 0.05,
+      s.x, s.y, baseR
+    );
+
+    if (isResearched) {
+      grad.addColorStop(0, lightenColor(color, 0.5));
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, darkenColor(color, 0.3));
+    } else if (available) {
+      grad.addColorStop(0, lightenColor(color, 0.35));
+      grad.addColorStop(0.6, color);
+      grad.addColorStop(1, darkenColor(color, 0.25));
+    } else {
+      grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.25)`);
+      grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0.08)`);
+    }
+
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, baseR, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Border
+    if (isResearched) {
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 3 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.shadowColor = '#2ecc71';
+      ctx.shadowBlur = 6 * camera.zoom;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else if (available) {
+      ctx.strokeStyle = `rgba(255,255,255,0.6)`;
+      ctx.lineWidth = 2 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.4)`;
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.setLineDash([5 * camera.zoom, 4 * camera.zoom]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Inner highlight ring
+    if (isResearched || available) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, baseR * 0.72, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,255,255,0.08)`;
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    }
+
+    // Text
+    if (tech && n.displayScale > 0.3) {
+      const zoomLevel = camera.zoom;
+      let showFull = zoomLevel > 0.65;
+      let showLevel = zoomLevel > 0.42;
+      let showText = zoomLevel > 0.32;
+
+      if (showText) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const textColor = isResearched || available ? '#fff' : `rgba(${rgb.r},${rgb.g},${rgb.b},0.7)`;
+
+        if (showFull) {
+          const fontSize = Math.max(9, Math.min(12, 11.5 * camera.zoom));
+          ctx.font = `600 ${fontSize}px 'Segoe UI', system-ui`;
+          ctx.fillStyle = textColor;
+
+          const words = tech.name.split(' ');
+          const lineHeight = fontSize * 1.2;
+          const maxTextWidth = baseR * 1.55;
+          let lines = [];
+          let cur = '';
+          words.forEach(w => {
+            const test = cur ? cur + ' ' + w : w;
+            if (ctx.measureText(test).width > maxTextWidth && cur) {
+              lines.push(cur); cur = w;
+            } else cur = test;
+          });
+          if (cur) lines.push(cur);
+
+          const totalH = lines.length * lineHeight;
+          const levelOff = showLevel ? 9 * camera.zoom : 0;
+          const startY = s.y - totalH / 2 - levelOff / 2;
+          lines.forEach((line, i) => {
+            ctx.fillText(line, s.x, startY + i * lineHeight + lineHeight / 2);
+          });
+
+          if (showLevel) {
+            const lfs = Math.max(7.5, Math.min(10, 9.5 * camera.zoom));
+            ctx.font = `700 ${lfs}px 'Segoe UI', system-ui`;
+            ctx.fillStyle = isResearched || available ? 'rgba(255,255,255,0.7)' : `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)`;
+            ctx.fillText(`Ур. ${LEVEL_ROMAN[tech.level] || (tech.level+1)}`, s.x, s.y + totalH / 2 + lfs * 0.8);
+          }
+        } else {
+          const fontSize = Math.max(7.5, Math.min(10, 9.5 * camera.zoom));
+          ctx.font = `700 ${fontSize}px 'Segoe UI', system-ui`;
+          ctx.fillStyle = textColor;
+          const short = tech.name.split(' ')[0].substring(0, 5);
+          ctx.fillText(short.toUpperCase(), s.x, s.y - (showLevel ? 5 * camera.zoom : 0));
+          if (showLevel) {
+            ctx.font = `700 ${Math.max(7, 8.5 * camera.zoom)}px 'Segoe UI', system-ui`;
+            ctx.fillText(`${LEVEL_ROMAN[tech.level] || (tech.level+1)}`, s.x, s.y + 9 * camera.zoom);
+          }
+        }
+      }
+    }
+
+    // Checkmark badge for researched
+    if (isResearched && filtered) {
+      const badgeR = 11 * camera.zoom;
+      const badgeX = s.x + baseR * 0.68;
+      const badgeY = s.y + baseR * 0.68;
+
+      // Badge circle
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+      ctx.fillStyle = '#27ae60';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5 * camera.zoom;
+      ctx.stroke();
+
+      // Checkmark
+      ctx.save();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2 * camera.zoom;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const cx2 = badgeX, cy2 = badgeY;
+      const cs = badgeR * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(cx2 - cs * 0.6, cy2 - cs * 0.05);
+      ctx.lineTo(cx2 - cs * 0.05, cy2 + cs * 0.55);
+      ctx.lineTo(cx2 + cs * 0.7, cy2 - cs * 0.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  });
+}
+
+function lightenColor(hex, amount) {
+  const {r,g,b} = hexToRgb(hex);
+  return `rgb(${Math.min(255,r+Math.round(amount*255))},${Math.min(255,g+Math.round(amount*255))},${Math.min(255,b+Math.round(amount*255))})`;
+}
+function darkenColor(hex, amount) {
+  const {r,g,b} = hexToRgb(hex);
+  return `rgb(${Math.max(0,r-Math.round(amount*255))},${Math.max(0,g-Math.round(amount*255))},${Math.max(0,b-Math.round(amount*255))})`;
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawEdges();
+  drawNodes();
+}
+
+// ============================================================
+// LOOP
+// ============================================================
+let lastTime = 0;
+function loop(ts) {
+  const dt = Math.min((ts - lastTime) / 16, 3);
+  lastTime = ts;
+  time = ts;
+  simulate(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+// СОБЫТИЯ МЫШИ
+// ============================================================
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08;
+  const mouse = screenToWorld(e.clientX, e.clientY);
+  camera.targetZoom *= zoomFactor;
+  camera.targetZoom = Math.max(0.22, Math.min(3.8, camera.targetZoom));
+  // Adjust camera to zoom toward cursor
+  const scale = camera.targetZoom / camera.zoom;
+  const newMouse = screenToWorld(e.clientX, e.clientY);
+  camera.x += mouse.x - newMouse.x;
+  camera.y += mouse.y - newMouse.y;
+}, { passive: false });
+
+canvas.addEventListener('mousedown', e => {
+  const world = screenToWorld(e.clientX, e.clientY);
+  let clicked = null;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const s = worldToScreen(n.x, n.y);
+    const dx = s.x - e.clientX, dy = s.y - e.clientY;
+    if (Math.sqrt(dx*dx + dy*dy) < getNodeRadius(n) * camera.zoom * n.displayScale + 6) {
+      clicked = n;
+      break;
+    }
+  }
+  if (clicked) {
+    draggingNode = clicked;
+    dragStart = { x: e.clientX, y: e.clientY };
+  } else {
+    panning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    cameraStart = { x: camera.x, y: camera.y };
+    canvas.classList.add('dragging');
+    closeTechPanel();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (draggingNode) {
+    const world = screenToWorld(e.clientX, e.clientY);
+    draggingNode.x = world.x;
+    draggingNode.y = world.y;
+    draggingNode.vx = 0;
+    draggingNode.vy = 0;
+    if (selectedNode === draggingNode) positionTechPanel(draggingNode);
+  } else if (panning) {
+    const dx = (e.clientX - panStart.x) / camera.zoom;
+    const dy = (e.clientY - panStart.y) / camera.zoom;
+    camera.x = cameraStart.x + dx;
+    camera.y = cameraStart.y + dy;
+  }
+
+  // Hover detection
+  let found = null;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const s = worldToScreen(n.x, n.y);
+    const dx = s.x - e.clientX, dy = s.y - e.clientY;
+    if (Math.sqrt(dx*dx + dy*dy) < getNodeRadius(n) * camera.zoom * n.displayScale + 4) {
+      found = n; break;
+    }
+  }
+  hoveredNode = found;
+  canvas.style.cursor = found ? 'pointer' : (panning ? 'grabbing' : 'grab');
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (draggingNode) {
+    const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (Math.sqrt(dx*dx + dy*dy) < 5) openTechPanel(draggingNode);
+    draggingNode = null;
+  }
+  panning = false;
+  canvas.classList.remove('dragging');
+});
+
+// ============================================================
+// ПАНЕЛЬ ТЕХНОЛОГИИ
+// ============================================================
+function positionTechPanel(node) {
+  const panel = document.getElementById('techPanel');
+  const s = worldToScreen(node.x, node.y);
+  const panelW = 350;
+  const panelH = panel.offsetHeight || 480;
+
+  let px = s.x + getNodeRadius(node) * camera.zoom + 18;
+  let py = s.y - panelH / 2;
+
+  if (px + panelW > W - 16) px = s.x - getNodeRadius(node) * camera.zoom - panelW - 18;
+  py = Math.max(16, Math.min(H - panelH - 16, py));
+
+  panel.style.left = px + 'px';
+  panel.style.top = py + 'px';
+}
+
+function openTechPanel(node) {
+  const tech = TECHS.find(t => t.id === node.id);
+  if (!tech) return;
+  selectedNode = node;
+
+  const color = getNodeColor(node);
+  document.getElementById('tpAccent').style.background = color;
+  document.getElementById('tpDot').style.background = color;
+  document.getElementById('tpDot').style.boxShadow = `0 0 10px ${color}`;
+  document.getElementById('tpName').textContent = tech.name;
+
+  const tag = document.getElementById('tpTag');
+  tag.textContent = TREES[tech.tree].name;
+  tag.style.background = TREES[tech.tree].color + '33';
+  tag.style.color = TREES[tech.tree].color;
+
+  const sub = getNodeSubtree(node.id);
+  const subTag = document.getElementById('tpSubTag');
+  if (sub) {
+    subTag.textContent = sub.name;
+    subTag.style.display = 'inline-block';
+  } else {
+    subTag.style.display = 'none';
+  }
+
+  document.getElementById('tpWhat').textContent = tech.desc.what;
+  document.getElementById('tpAppearance').textContent = tech.desc.appearance;
+  document.getElementById('tpGives').textContent = tech.desc.gives;
+
+  const missing = getMissingDeps(node);
+  const missingWrap = document.getElementById('tpMissingWrap');
+  const missingList = document.getElementById('tpMissingList');
+  if (missing.length > 0 && !researched.has(node.id)) {
+    missingWrap.style.display = 'block';
+    missingList.innerHTML = missing.map(m => {
+      const lbl = m.type === 'indirect' ? ' <span style="color:#e74c3c;font-size:10px">(другое дерево)</span>' : '';
+      return `<li>${m.name}${lbl}</li>`;
+    }).join('');
+  } else {
+    missingWrap.style.display = 'none';
+  }
+
+  const btn = document.getElementById('tpResearchBtn');
+  const available = isNodeAvailable(node);
+  const done = researched.has(node.id);
+
+  if (done) {
+    btn.textContent = '✓ Исследовано';
+    btn.className = 'research-btn done';
+    btn.onclick = null;
+  } else if (available) {
+    btn.textContent = 'Исследовать';
+    btn.className = 'research-btn available';
+    btn.onclick = () => researchTech(node);
+  } else {
+    btn.textContent = 'Недоступно';
+    btn.className = 'research-btn locked';
+    btn.onclick = null;
+  }
+
+  const panel = document.getElementById('techPanel');
+  panel.style.display = 'block';
+  void panel.offsetWidth;
+  positionTechPanel(node);
+  requestAnimationFrame(() => panel.classList.add('show'));
+}
+
+function closeTechPanel() {
+  const panel = document.getElementById('techPanel');
+  panel.classList.remove('show');
+  setTimeout(() => { if (!panel.classList.contains('show')) panel.style.display = 'none'; }, 300);
+  selectedNode = null;
+}
+
+function researchTech(node) {
+  researched.add(node.id);
+  node.pulseActive = true;
+  node.pulsePhase = 0;
+
+  edges.forEach(e => {
+    if (e.from === node.id || e.to === node.id) {
+      const other = nodes.find(n => n.id === (e.from === node.id ? e.to : e.from));
+      if (other) {
+        const dx = other.x - node.x, dy = other.y - node.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        other.vx += (dx/dist) * 30;
+        other.vy += (dy/dist) * 30;
+      }
+    }
+  });
+
+  openTechPanel(node);
+}
+
+// ============================================================
+// ЛЕГЕНДА
+// ============================================================
+document.getElementById('legendBtn').addEventListener('click', () => {
+  document.getElementById('legendPanel').classList.toggle('show');
+});
+
+// ============================================================
+// ПОИСК
+// ============================================================
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, () => Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));
+  return dp[m][n];
+}
+
+function fuzzyScore(query, text) {
+  const q = query.toLowerCase(), t = text.toLowerCase();
+  if (t.includes(q)) return 100 - q.length;
+  if (q.length <= 5) {
+    const words = t.split(' ');
+    let best = Infinity;
+    words.forEach(w => { const d = levenshtein(q, w.substring(0, q.length+2)); if (d < best) best = d; });
+    return Math.max(0, 50 - best * 10);
+  }
+  let qi = 0, score = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) { score++; qi++; }
+  }
+  return qi === q.length ? score * 5 : 0;
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  if (!q) { searchResults.style.display = 'none'; return; }
+
+  const scored = TECHS.map(t => ({ tech: t, score: fuzzyScore(q, t.name) }))
+    .filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0, 8);
+
+  if (!scored.length) { searchResults.style.display = 'none'; return; }
+
+  searchResults.innerHTML = scored.map(s => `
+    <div class="search-result-item" data-id="${s.tech.id}">
+      <div class="dot" style="background:${getNodeColor(nodes.find(n=>n.id===s.tech.id)||{id:s.tech.id,tree:s.tech.tree})}"></div>
+      <span>${s.tech.name}</span>
+      <span class="score">${Math.round(s.score)}%</span>
+    </div>`).join('');
+  searchResults.style.display = 'block';
+
+  searchResults.querySelectorAll('.search-result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const node = nodes.find(n => n.id === id);
+      if (node) {
+        camera.x = -node.x; camera.y = -node.y; camera.targetZoom = 1.3; camera.zoom = 1.3;
+        setTimeout(() => openTechPanel(node), 100);
+      }
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    });
+  });
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#searchBox') && !e.target.closest('#searchResults')) searchResults.style.display = 'none';
+});
+
+// ============================================================
+// ФИЛЬТР
+// ============================================================
+const filterStrip = document.getElementById('filterStrip');
+const filterPanel = document.getElementById('filterPanel');
+const filterInput = document.getElementById('filterInput');
+const filterSuggestions = document.getElementById('filterSuggestions');
+const filterActiveTags = document.getElementById('filterActiveTags');
+
+let filterTab = 'tree';
+let filterHoverTimeout = null;
+
+function showFilterPanel() {
+  clearTimeout(filterHoverTimeout);
+  filterPanel.classList.add('visible');
+  filterStrip.classList.add('active');
+}
+function hideFilterPanel() {
+  filterHoverTimeout = setTimeout(() => {
+    filterPanel.classList.remove('visible');
+    filterStrip.classList.remove('active');
+  }, 180);
+}
+
+filterStrip.addEventListener('mouseenter', showFilterPanel);
+filterStrip.addEventListener('mouseleave', hideFilterPanel);
+filterPanel.addEventListener('mouseenter', showFilterPanel);
+filterPanel.addEventListener('mouseleave', hideFilterPanel);
+
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    filterTab = tab.dataset.tab;
+    filterInput.value = '';
+    filterSuggestions.classList.remove('show');
+    updateFilterPlaceholder();
+  });
+});
+
+function updateFilterPlaceholder() {
+  const placeholders = {
+    tree: 'Введите название дерева...',
+    subtree: 'Введите название под-дерева...',
+    group: 'Введите название технологии...'
+  };
+  filterInput.placeholder = placeholders[filterTab];
+}
+updateFilterPlaceholder();
+
+filterInput.addEventListener('input', () => {
+  const q = filterInput.value.trim().toLowerCase();
+  if (!q) { filterSuggestions.classList.remove('show'); return; }
+
+  let items = [];
+  if (filterTab === 'tree') {
+    items = Object.entries(TREES)
+      .filter(([k,v]) => v.name.toLowerCase().includes(q) || fuzzyScore(q, v.name) > 20)
+      .sort((a,b) => fuzzyScore(q, b[1].name) - fuzzyScore(q, a[1].name))
+      .map(([k,v]) => ({ id: k, label: v.name, color: v.color, sub: null }));
+  } else if (filterTab === 'subtree') {
+    items = Object.entries(SUBTREES)
+      .filter(([k,v]) => v.name.toLowerCase().includes(q) || fuzzyScore(q, v.name) > 20)
+      .sort((a,b) => fuzzyScore(q, b[1].name) - fuzzyScore(q, a[1].name))
+      .map(([k,v]) => ({ id: k, label: v.name, color: v.color, sub: TREES[v.tree].name }));
+  } else {
+    // group: group by base name (e.g. "Щиты", "Ионный двигатель")
+    const groups = {};
+    TECHS.forEach(t => {
+      const base = t.name.replace(/\s+[IVXLCDM]+$/, '').replace(/\s+\d+$/, '').trim();
+      if (!groups[base]) groups[base] = { base, nodeIds: [], color: TREES[t.tree].color };
+      groups[base].nodeIds.push(t.id);
+    });
+    items = Object.values(groups)
+      .filter(g => g.base.toLowerCase().includes(q) || fuzzyScore(q, g.base) > 15)
+      .sort((a,b) => fuzzyScore(q, b.base) - fuzzyScore(q, a.base))
+      .slice(0, 10)
+      .map(g => ({ id: '_group_' + g.base, label: g.base, color: g.color, sub: `${g.nodeIds.length} тех.`, _nodeIds: g.nodeIds }));
+  }
+
+  if (!items.length) { filterSuggestions.classList.remove('show'); return; }
+
+  filterSuggestions.innerHTML = items.slice(0,8).map(item => `
+    <div class="filter-suggestion-item" data-id="${encodeURIComponent(item.id)}"
+      data-label="${encodeURIComponent(item.label)}"
+      data-color="${encodeURIComponent(item.color || '#aaa')}"
+      data-nodeids="${encodeURIComponent(JSON.stringify(item._nodeIds || []))}">
+      <div style="width:10px;height:10px;border-radius:50%;background:${item.color};flex-shrink:0"></div>
+      <span>${item.label}</span>
+      ${item.sub ? `<span class="fsub">${item.sub}</span>` : ''}
+    </div>`).join('');
+  filterSuggestions.classList.add('show');
+
+  filterSuggestions.querySelectorAll('.filter-suggestion-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = decodeURIComponent(el.dataset.id);
+      const label = decodeURIComponent(el.dataset.label);
+      const color = decodeURIComponent(el.dataset.color);
+      const nodeIdsOverride = JSON.parse(decodeURIComponent(el.dataset.nodeids));
+      applyFilter(id, label, color, nodeIdsOverride);
+      filterInput.value = '';
+      filterSuggestions.classList.remove('show');
+    });
+  });
+});
+
+function applyFilter(id, label, color, nodeIdsOverride) {
+  filterState.type = filterTab;
+
+  let ids = new Set();
+  if (nodeIdsOverride && nodeIdsOverride.length > 0) {
+    nodeIdsOverride.forEach(nid => ids.add(nid));
+  } else if (filterTab === 'tree') {
+    TECHS.filter(t => t.tree === id).forEach(t => ids.add(t.id));
+  } else if (filterTab === 'subtree') {
+    const st = SUBTREES[id];
+    if (st) st.nodeIds.forEach(nid => ids.add(nid));
+  }
+
+  // Merge with existing (OR logic)
+  filterState.ids.forEach(existing => ids.add(existing));
+  filterState.ids = ids;
+
+  renderFilterTags();
+}
+
+function renderFilterTags() {
+  if (filterState.ids.size === 0) {
+    filterActiveTags.innerHTML = '<span class="filter-status">Фильтр не активен — показаны все технологии</span>';
+    return;
+  }
+
+  // Build tags from active filter ids by grouping
+  // We'll just show how many nodes are highlighted
+  const count = filterState.ids.size;
+  filterActiveTags.innerHTML = `
+    <div class="filter-tag">
+      <span>🔍 ${count} технологий выделено</span>
+      <span class="ftag-remove">✕</span>
+    </div>`;
+  filterActiveTags.querySelector('.filter-tag').addEventListener('click', resetFilter);
+}
+
+function resetFilter() {
+  filterState = { type: null, ids: new Set() };
+  filterInput.value = '';
+  filterSuggestions.classList.remove('show');
+  filterActiveTags.innerHTML = '<span class="filter-status">Фильтр не активен — показаны все технологии</span>';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#filterPanel') && !e.target.closest('#filterStrip')) {
+    filterSuggestions.classList.remove('show');
+  }
+});
+
+// ============================================================
+// ЭКСПОРТ / ИМПОРТ
+// ============================================================
+function exportSave() {
+  const data = { version: 2, researched: Array.from(researched), exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'tech_tree_save.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importSave(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.researched && Array.isArray(data.researched)) {
+        researched = new Set(data.researched);
+        nodes.forEach(n => { if (researched.has(n.id)) { n.pulseActive = true; n.pulsePhase = 0; } });
+        alert(`Импортировано ${researched.size} технологий.`);
+      }
+    } catch (err) { alert('Ошибка: ' + err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// СТАРТ
+// ============================================================
+initNodes();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
