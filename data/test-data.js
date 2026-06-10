@@ -1,288 +1,806 @@
-// ========================
-// 1. ДЕРЕВЬЯ (TREES)
-// ========================
+// ============================================================
+// ТЕСТОВЫЕ ДАННЫЕ: 3 дерева, 10 поддеревьев на каждое, ~200 нод
+// Каждая нода имеет путь до базовой технологии своего дерева
+// ============================================================
+
+// ============================================================
+// TREES
+// ============================================================
 const TREES = {
-  drives: { name: "Двигательные системы", color: "#3498db" },
-  energy: { name: "Энергосистемы", color: "#e74c3c" },
-  lifecomm: { name: "Жизнеобеспечение и связь", color: "#2ecc71" }
+  nano:    { name: "Нанотехнологии",  color: "#00bcd4" },
+  psi:     { name: "Психотехнологии", color: "#e67e22" },
+  chrono:  { name: "Хронотехнологии", color: "#9b59b6" }
 };
 
-// ========================
-// 2. ПОДДЕРЕВЬЯ (SUBTREES)
-// ========================
+// ============================================================
+// SUBTREES  (10 на каждое дерево)
+// ============================================================
 const SUBTREES = {
-  // Дерево drives (10 поддеревьев)
-  drives_chem: { name: "Химические двигатели", tree: "drives", color: "#ff7e67", nodeIds: ["drives_chem_base","drives_chem_high","drives_chem_eff","drives_chem_hybrid","drives_chem_adv","drives_chem_staged","drives_chem_nano"] },
-  drives_nuclear: { name: "Ядерные двигатели", tree: "drives", color: "#f4d03f", nodeIds: ["drives_nuc_base","drives_nuc_pulse","drives_nuc_gas","drives_nuc_ion","drives_nuc_fusion","drives_nuc_advanced","drives_nuc_safety","drives_nuc_compact"] },
-  drives_ion: { name: "Ионные двигатели", tree: "drives", color: "#85c1e9", nodeIds: ["drives_ion_base","drives_ion_grid","drives_ion_hall","drives_ion_magneto","drives_ion_dual","drives_ion_highthrust"] },
-  drives_plasma: { name: "Плазменные двигатели", tree: "drives", color: "#e67e22", nodeIds: ["drives_plasma_base","drives_plasma_vortex","drives_plasma_pulse","drives_plasma_contain","drives_plasma_jet","drives_plasma_stable"] },
-  drives_photon: { name: "Фотонные двигатели", tree: "drives", color: "#f1c40f", nodeIds: ["drives_photon_base","drives_photon_sail","drives_photon_laser","drives_photon_resonance","drives_photon_pulse","drives_photon_emdrive","drives_photon_quantum"] },
-  drives_warp: { name: "Искривление пространства", tree: "drives", color: "#9b59b6", nodeIds: ["drives_warp_base","drives_warp_bubble","drives_warp_field","drives_warp_stabil","drives_warp_nav","drives_warp_energy","drives_warp_drive"] },
-  drives_quantum: { name: "Квантовые двигатели", tree: "drives", color: "#1abc9c", nodeIds: ["drives_qdrive_base","drives_qdrive_entangle","drives_qdrive_tunnel","drives_qdrive_flux","drives_qdrive_stable","drives_qdrive_hyper"] },
-  drives_pulse: { name: "Импульсные двигатели", tree: "drives", color: "#e74c3c", nodeIds: ["drives_pulse_base","drives_pulse_magneto","drives_pulse_induct","drives_pulse_capacitor","drives_pulse_freq","drives_pulse_burst"] },
-  drives_thruster: { name: "Реактивные ускорители", tree: "drives", color: "#95a5a6", nodeIds: ["drives_thruster_base","drives_thruster_chem","drives_thruster_elec","drives_thruster_gimbal","drives_thruster_array","drives_thruster_nano"] },
-  drives_hybrid: { name: "Гибридные системы", tree: "drives", color: "#d35400", nodeIds: ["drives_hybrid_base","drives_hybrid_ionplasma","drives_hybrid_nucl","drives_hybrid_multi","drives_hybrid_smart"] },
-  // Дерево energy (10 поддеревьев)
-  energy_solar: { name: "Солнечные батареи", tree: "energy", color: "#f39c12", nodeIds: ["energy_solar_base","energy_solar_panel","energy_solar_film","energy_solar_concentrate","energy_solar_space","energy_solar_quantum","energy_solar_tower","energy_solar_orbital"] },
-  energy_fusion: { name: "Термоядерный синтез", tree: "energy", color: "#e74c3c", nodeIds: ["energy_fusion_base","energy_fusion_tokamak","energy_fusion_laser","energy_fusion_magnetic","energy_fusion_fuel","energy_fusion_ignition","energy_fusion_steady","energy_fusion_catalyzed","energy_fusion_aneutronic"] },
-  energy_antimatter: { name: "Антиматерия", tree: "energy", color: "#c0392b", nodeIds: ["energy_am_base","energy_am_trap","energy_am_production","energy_am_reactor","energy_am_safety","energy_am_efficiency","energy_am_storage","energy_am_harvest"] },
-  energy_quantum: { name: "Квантовые источники", tree: "energy", color: "#16a085", nodeIds: ["energy_qenergy_base","energy_qenergy_vacuum","energy_qenergy_fluctuation","energy_qenergy_extractor","energy_qenergy_cell","energy_qenergy_stable"] },
-  energy_capacitor: { name: "Энергонакопители", tree: "energy", color: "#2980b9", nodeIds: ["energy_cap_base","energy_cap_super","energy_cap_graphene","energy_cap_quantum","energy_cap_array","energy_cap_nano"] },
-  energy_wireless: { name: "Беспроводная передача", tree: "energy", color: "#8e44ad", nodeIds: ["energy_wireless_base","energy_wireless_microwave","energy_wireless_laser","energy_wireless_resonance","energy_wireless_beam","energy_wireless_network"] },
-  energy_fission: { name: "Реакторы деления", tree: "energy", color: "#7f8c8d", nodeIds: ["energy_fission_base","energy_fission_fast","energy_fission_waste","energy_fission_safety","energy_fission_pebble","energy_fission_compact"] },
-  energy_cryo: { name: "Криогенное хранение", tree: "energy", color: "#3498db", nodeIds: ["energy_cryo_base","energy_cryo_cell","energy_cryo_superconductor","energy_cryo_magnetic","energy_cryo_efficiency"] },
-  energy_shield: { name: "Энергетические щиты", tree: "energy", color: "#2c3e50", nodeIds: ["energy_shield_base","energy_shield_plasma","energy_shield_force","energy_shield_adaptive","energy_shield_regen","energy_shield_bubble","energy_shield_quantum"] },
-  energy_backup: { name: "Резервные системы", tree: "energy", color: "#bdc3c7", nodeIds: ["energy_backup_base","energy_backup_flywheel","energy_backup_battery","energy_backup_fuelcell","energy_backup_emergency"] },
-  // Дерево lifecomm (10 поддеревьев)
-  life_atmo: { name: "Атмосферные системы", tree: "lifecomm", color: "#48c9b0", nodeIds: ["life_atmo_base","life_atmo_scrubber","life_atmo_o2","life_atmo_co2","life_atmo_pressure","life_atmo_humidity","life_atmo_recycle"] },
-  life_water: { name: "Водоснабжение", tree: "lifecomm", color: "#5dade2", nodeIds: ["life_water_base","life_water_filter","life_water_recycle","life_water_electrolysis","life_water_sterile","life_water_loop"] },
-  life_food: { name: "Пищевые синтезаторы", tree: "lifecomm", color: "#52be80", nodeIds: ["life_food_base","life_food_hydroponic","life_food_algae","life_food_synth","life_food_3d","life_food_nutrient","life_food_meat","life_food_fungi"] },
-  life_radiation: { name: "Радиационная защита", tree: "lifecomm", color: "#f5b041", nodeIds: ["life_rad_base","life_rad_shield","life_rad_active","life_rad_repair","life_rad_monitor","life_rad_hardening"] },
-  life_cryosleep: { name: "Криосон", tree: "lifecomm", color: "#aab7b8", nodeIds: ["life_cryo_base","life_cryo_chamber","life_cryo_stasis","life_cryo_revival","life_cryo_longterm","life_cryo_medical"] },
-  life_quantumcom: { name: "Квантовая связь", tree: "lifecomm", color: "#bb8fce", nodeIds: ["life_qcom_base","life_qcom_entangle","life_qcom_transceiver","life_qcom_network","life_qcom_crypto","life_qcom_relay","life_qcom_router"] },
-  life_lasercom: { name: "Лазерная связь", tree: "lifecomm", color: "#f7dc6f", nodeIds: ["life_lasercom_base","life_lasercom_mod","life_lasercom_pulse","life_lasercom_frequency","life_lasercom_array","life_lasercom_deep"] },
-  life_sensors: { name: "Сенсорные сети", tree: "lifecomm", color: "#85c1e9", nodeIds: ["life_sensor_base","life_sensor_optical","life_sensor_infrared","life_sensor_lidar","life_sensor_radar","life_sensor_gravity","life_sensor_subspace","life_sensor_quantum","life_sensor_neutrino"] },
-  life_nav: { name: "Навигационные системы", tree: "lifecomm", color: "#f1948a", nodeIds: ["life_nav_base","life_nav_gyro","life_nav_star","life_nav_gps","life_nav_inertial","life_nav_quantum"] },
-  life_gravity: { name: "Искусственная гравитация", tree: "lifecomm", color: "#d7bde2", nodeIds: ["life_grav_base","life_grav_plate","life_grav_rotating","life_grav_magnetic","life_grav_field","life_grav_singularity","life_grav_control","life_grav_inverter","life_grav_compensator"] }
+
+  // --- NANO (10 поддеревьев) ---
+  nano_assembly: {
+    name: "Нано-сборка", tree: "nano", color: "#0097a7",
+    nodeIds: ["nano_base","nano_arm1","nano_arm2","nano_arm3","nano_fab1","nano_fab2","nano_fab3"]
+  },
+  nano_medicine: {
+    name: "Нано-медицина", tree: "nano", color: "#26c6da",
+    nodeIds: ["nano_med1","nano_med2","nano_med3","nano_med4","nano_med5"]
+  },
+  nano_energy: {
+    name: "Нано-энергетика", tree: "nano", color: "#00838f",
+    nodeIds: ["nano_en1","nano_en2","nano_en3","nano_en4","nano_en5"]
+  },
+  nano_armor: {
+    name: "Нано-броня", tree: "nano", color: "#006064",
+    nodeIds: ["nano_ar1","nano_ar2","nano_ar3","nano_ar4"]
+  },
+  nano_compute: {
+    name: "Нано-вычисления", tree: "nano", color: "#4dd0e1",
+    nodeIds: ["nano_cpu1","nano_cpu2","nano_cpu3","nano_cpu4","nano_cpu5"]
+  },
+  nano_weapons: {
+    name: "Нано-оружие", tree: "nano", color: "#00acc1",
+    nodeIds: ["nano_wp1","nano_wp2","nano_wp3","nano_wp4"]
+  },
+  nano_env: {
+    name: "Нано-экология", tree: "nano", color: "#80deea",
+    nodeIds: ["nano_env1","nano_env2","nano_env3"]
+  },
+  nano_swarm: {
+    name: "Нано-рои", tree: "nano", color: "#b2ebf2",
+    nodeIds: ["nano_sw1","nano_sw2","nano_sw3","nano_sw4"]
+  },
+  nano_sense: {
+    name: "Нано-сенсоры", tree: "nano", color: "#e0f7fa",
+    nodeIds: ["nano_sns1","nano_sns2","nano_sns3","nano_sns4"]
+  },
+  nano_cloak: {
+    name: "Нано-маскировка", tree: "nano", color: "#00bfa5",
+    nodeIds: ["nano_clk1","nano_clk2","nano_clk3"]
+  },
+
+  // --- PSI (10 поддеревьев) ---
+  psi_core: {
+    name: "Пси-ядро", tree: "psi", color: "#f39c12",
+    nodeIds: ["psi_base","psi_amp1","psi_amp2","psi_amp3"]
+  },
+  psi_tele: {
+    name: "Телепатия", tree: "psi", color: "#e67e22",
+    nodeIds: ["psi_tele1","psi_tele2","psi_tele3","psi_tele4"]
+  },
+  psi_tele_k: {
+    name: "Телекинез", tree: "psi", color: "#d35400",
+    nodeIds: ["psi_tk1","psi_tk2","psi_tk3","psi_tk4"]
+  },
+  psi_scan: {
+    name: "Пси-сканирование", tree: "psi", color: "#e59866",
+    nodeIds: ["psi_sc1","psi_sc2","psi_sc3","psi_sc4"]
+  },
+  psi_shield: {
+    name: "Пси-защита", tree: "psi", color: "#f0b27a",
+    nodeIds: ["psi_sh1","psi_sh2","psi_sh3","psi_sh4"]
+  },
+  psi_dom: {
+    name: "Ментальный контроль", tree: "psi", color: "#ca6f1e",
+    nodeIds: ["psi_dom1","psi_dom2","psi_dom3"]
+  },
+  psi_dream: {
+    name: "Сновидения", tree: "psi", color: "#f5cba7",
+    nodeIds: ["psi_dr1","psi_dr2","psi_dr3"]
+  },
+  psi_project: {
+    name: "Астральная проекция", tree: "psi", color: "#fdebd0",
+    nodeIds: ["psi_ap1","psi_ap2","psi_ap3"]
+  },
+  psi_group: {
+    name: "Групповое сознание", tree: "psi", color: "#a9cce3",
+    nodeIds: ["psi_grp1","psi_grp2","psi_grp3"]
+  },
+  psi_weapon: {
+    name: "Пси-оружие", tree: "psi", color: "#c0392b",
+    nodeIds: ["psi_wp1","psi_wp2","psi_wp3","psi_wp4"]
+  },
+
+  // --- CHRONO (10 поддеревьев) ---
+  chrono_core: {
+    name: "Хроно-ядро", tree: "chrono", color: "#8e44ad",
+    nodeIds: ["chrono_base","chrono_pulse1","chrono_pulse2","chrono_pulse3"]
+  },
+  chrono_slow: {
+    name: "Замедление", tree: "chrono", color: "#9b59b6",
+    nodeIds: ["chrono_sl1","chrono_sl2","chrono_sl3","chrono_sl4"]
+  },
+  chrono_stop: {
+    name: "Остановка", tree: "chrono", color: "#7d3c98",
+    nodeIds: ["chrono_st1","chrono_st2","chrono_st3"]
+  },
+  chrono_accel: {
+    name: "Ускорение", tree: "chrono", color: "#a569bd",
+    nodeIds: ["chrono_ac1","chrono_ac2","chrono_ac3","chrono_ac4"]
+  },
+  chrono_reverse: {
+    name: "Откат", tree: "chrono", color: "#6c3483",
+    nodeIds: ["chrono_rv1","chrono_rv2","chrono_rv3"]
+  },
+  chrono_branch: {
+    name: "Ветвление реальности", tree: "chrono", color: "#d7bde2",
+    nodeIds: ["chrono_br1","chrono_br2","chrono_br3"]
+  },
+  chrono_portal: {
+    name: "Хроно-порталы", tree: "chrono", color: "#c39bd3",
+    nodeIds: ["chrono_pt1","chrono_pt2","chrono_pt3"]
+  },
+  chrono_shield: {
+    name: "Хроно-щит", tree: "chrono", color: "#af7ac5",
+    nodeIds: ["chrono_hs1","chrono_hs2","chrono_hs3"]
+  },
+  chrono_spy: {
+    name: "Темпоральная разведка", tree: "chrono", color: "#bb8fce",
+    nodeIds: ["chrono_sp1","chrono_sp2","chrono_sp3"]
+  },
+  chrono_bomb: {
+    name: "Темпоральное оружие", tree: "chrono", color: "#76448a",
+    nodeIds: ["chrono_bm1","chrono_bm2","chrono_bm3","chrono_bm4"]
+  }
 };
 
-// ========================
-// 3. ТЕХНОЛОГИИ (TECHS)
-// ========================
+// ============================================================
+// TECHS  (~200 нод, ~67 на дерево)
+// ============================================================
 const TECHS = [
-  // ---------- Дерево drives ----------
-  // Поддерево chem
-  { id: "drives_chem_base", name: "Базовые химические двигатели", tree: "drives", level: 0, deps: [], desc: { what: "Простейшие ракетные двигатели на химическом топливе", appearance: "Сопла с оранжевым пламенем", gives: "Начальная тяга для маневров" } },
-  { id: "drives_chem_high", name: "Высокоэффективное топливо", tree: "drives", level: 1, deps: [{ id: "drives_chem_base", type: "direct" }], desc: { what: "Смеси с повышенным удельным импульсом", appearance: "Голубоватое пламя", gives: "+20% эффективности" } },
-  { id: "drives_chem_eff", name: "Регенеративное охлаждение", tree: "drives", level: 2, deps: [{ id: "drives_chem_high", type: "direct" }], desc: { what: "Циркуляция топлива для охлаждения сопла", appearance: "Серебристые трубки вокруг камеры", gives: "Длительная работа двигателя" } },
-  { id: "drives_chem_hybrid", name: "Гибридные химические ускорители", tree: "drives", level: 3, deps: [{ id: "drives_chem_eff", type: "direct" }], desc: { what: "Комбинация твердого и жидкого топлива", appearance: "Многослойные сопла", gives: "Регулируемая тяга" } },
-  { id: "drives_chem_adv", name: "Передовые химические двигатели", tree: "drives", level: 4, deps: [{ id: "drives_chem_hybrid", type: "direct" }], desc: { what: "Наноструктурированное топливо", appearance: "Черные сопла с мерцанием", gives: "Максимальная эффективность" } },
-  { id: "drives_chem_staged", name: "Ступенчатые ускорители", tree: "drives", level: 5, deps: [{ id: "drives_chem_adv", type: "direct" }], desc: { what: "Отбрасываемые ступени", appearance: "Разделяющиеся сегменты", gives: "Вывод тяжелых грузов" } },
-  { id: "drives_chem_nano", name: "Нанохимические двигатели", tree: "drives", level: 5, deps: [{ id: "drives_chem_adv", type: "direct" }], desc: { what: "Катализ на наноуровне", appearance: "Микроскопические сопла", gives: "Сверхкомпактные маневровые" } },
-  // Поддерево nuclear
-  { id: "drives_nuc_base", name: "Ядерный тепловой двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Нагрев водорода ядерным реактором", appearance: "Радиационные ребра", gives: "Высокий импульс" } },
-  { id: "drives_nuc_pulse", name: "Импульсный ядерный", tree: "drives", level: 1, deps: [{ id: "drives_nuc_base", type: "direct" }], desc: { what: "Последовательные ядерные взрывы", appearance: "Мощные вспышки", gives: "Гигантская тяга" } },
-  { id: "drives_nuc_gas", name: "Газофазный ядерный", tree: "drives", level: 2, deps: [{ id: "drives_nuc_pulse", type: "direct" }], desc: { what: "Ядерное топливо в газовой фазе", appearance: "Светящаяся плазма", gives: "Высокая температура" } },
-  { id: "drives_nuc_ion", name: "Ядерно-ионный гибрид", tree: "drives", level: 3, deps: [{ id: "drives_nuc_gas", type: "direct" }], desc: { what: "Ионизация отработанного водорода", appearance: "Синие струи", gives: "Экономия топлива" } },
-  { id: "drives_nuc_fusion", name: "Термоядерный ракетный", tree: "drives", level: 4, deps: [{ id: "drives_nuc_ion", type: "direct" }], desc: { what: "Реакции синтеза для нагрева", appearance: "Ярко-белый выхлоп", gives: "Огромная скорость" } },
-  { id: "drives_nuc_advanced", name: "Передовой ядерный", tree: "drives", level: 5, deps: [{ id: "drives_nuc_fusion", type: "direct" }], desc: { what: "Магнитное удержание плазмы", appearance: "Светящиеся кольца", gives: "Максимальная мощность" } },
-  { id: "drives_nuc_safety", name: "Радиационная защита", tree: "drives", level: 3, deps: [{ id: "drives_nuc_base", type: "direct" }], desc: { what: "Экранирование экипажа", appearance: "Толстые стенки", gives: "Безопасная работа" } },
-  { id: "drives_nuc_compact", name: "Компактный реактор", tree: "drives", level: 4, deps: [{ id: "drives_nuc_safety", type: "direct" }], desc: { what: "Миниатюризация", appearance: "Маленькие сферы", gives: "Установка на малые корабли" } },
-  // Поддерево ion
-  { id: "drives_ion_base", name: "Базовый ионный двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Ускорение ионов электродами", appearance: "Слабое синее свечение", gives: "Экономичная тяга" } },
-  { id: "drives_ion_grid", name: "Многосеточная решетка", tree: "drives", level: 1, deps: [{ id: "drives_ion_base", type: "direct" }], desc: { what: "Три сетки вместо двух", appearance: "Мерцающие слои", gives: "Повышенная фокусировка" } },
-  { id: "drives_ion_hall", name: "Холловский эффект", tree: "drives", level: 2, deps: [{ id: "drives_ion_grid", type: "direct" }], desc: { what: "Магнитное поле для удержания", appearance: "Кольцевой разряд", gives: "Большая плотность тока" } },
-  { id: "drives_ion_magneto", name: "Магнитоплазменный ионник", tree: "drives", level: 3, deps: [{ id: "drives_ion_hall", type: "direct" }], desc: { what: "Дополнительное магнитное сжатие", appearance: "Спиральные линии", gives: "Высокая скорость истечения" } },
-  { id: "drives_ion_dual", name: "Двухрежимный ионный", tree: "drives", level: 4, deps: [{ id: "drives_ion_magneto", type: "direct" }], desc: { what: "Переключение тяга/экономия", appearance: "Переключатели на корпусе", gives: "Адаптивность" } },
-  { id: "drives_ion_highthrust", name: "Тяжелый ионный", tree: "drives", level: 5, deps: [{ id: "drives_ion_dual", type: "direct" }], desc: { what: "Ксеноновый запас высокого давления", appearance: "Массивные синие сопла", gives: "Тяга для грузовых кораблей" } },
-  // Поддерево plasma
-  { id: "drives_plasma_base", name: "Плазменный двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Разогрев плазмы в соленоиде", appearance: "Фиолетовые струи", gives: "Средняя тяга" } },
-  { id: "drives_plasma_vortex", name: "Вихревая плазма", tree: "drives", level: 1, deps: [{ id: "drives_plasma_base", type: "direct" }], desc: { what: "Закрученный поток", appearance: "Спиральное свечение", gives: "Устойчивость" } },
-  { id: "drives_plasma_pulse", name: "Импульсный плазменный", tree: "drives", level: 2, deps: [{ id: "drives_plasma_vortex", type: "direct" }], desc: { what: "Короткие мощные разряды", appearance: "Мигающие вспышки", gives: "Высокая маневренность" } },
-  { id: "drives_plasma_contain", name: "Магнитное удержание", tree: "drives", level: 3, deps: [{ id: "drives_plasma_pulse", type: "direct" }], desc: { what: "Сверхпроводящие магниты", appearance: "Тороидальные катушки", gives: "Стабильность плазмы" } },
-  { id: "drives_plasma_jet", name: "Плазменная струя", tree: "drives", level: 4, deps: [{ id: "drives_plasma_contain", type: "direct" }], desc: { what: "Фокусировка в узкий пучок", appearance: "Тонкая белая линия", gives: "Дальнобойность" } },
-  { id: "drives_plasma_stable", name: "Стабилизированная плазма", tree: "drives", level: 5, deps: [{ id: "drives_plasma_jet", type: "direct" }], desc: { what: "Обратная связь по току", appearance: "Ровное голубоватое сияние", gives: "Бесперебойная работа" } },
-  // Поддерево photon
-  { id: "drives_photon_base", name: "Фотонный двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Давление света", appearance: "Яркий луч", gives: "Очень малая тяга, но долго" } },
-  { id: "drives_photon_sail", name: "Солнечный парус", tree: "drives", level: 1, deps: [{ id: "drives_photon_base", type: "direct" }], desc: { what: "Огромные отражающие полотна", appearance: "Серебристая фольга", gives: "Разгон без топлива" } },
-  { id: "drives_photon_laser", name: "Лазерный парус", tree: "drives", level: 2, deps: [{ id: "drives_photon_sail", type: "direct" }], desc: { what: "Облучение с орбитальной станции", appearance: "Красные лучи", gives: "Управляемый разгон" } },
-  { id: "drives_photon_resonance", name: "Резонансный фотонный", tree: "drives", level: 3, deps: [{ id: "drives_photon_laser", type: "direct" }], desc: { what: "Интерференция волн", appearance: "Мерцающая голограмма", gives: "Увеличение тяги" } },
-  { id: "drives_photon_pulse", name: "Импульсный лазер", tree: "drives", level: 4, deps: [{ id: "drives_photon_resonance", type: "direct" }], desc: { what: "Короткие гигаваттные вспышки", appearance: "Яркие вспышки", gives: "Рывковое ускорение" } },
-  { id: "drives_photon_emdrive", name: "ЭМ-двигатель", tree: "drives", level: 5, deps: [{ id: "drives_photon_pulse", type: "direct" }], desc: { what: "Микроволновый резонатор", appearance: "Запечатанный конус", gives: "Тяга без выброса" } },
-  { id: "drives_photon_quantum", name: "Квантовый фотонный", tree: "drives", level: 5, deps: [{ id: "drives_photon_emdrive", type: "direct" }], desc: { what: "Эффект Казимира", appearance: "Мерцающие пластины", gives: "Экзотическая тяга" } },
-  // Поддерево warp
-  { id: "drives_warp_base", name: "Теория деформации", tree: "drives", level: 0, deps: [], desc: { what: "Математический аппарат Алькубьерре", appearance: "Формулы на экранах", gives: "Возможность исследований" } },
-  { id: "drives_warp_bubble", name: "Пузырь Алькубьерре", tree: "drives", level: 1, deps: [{ id: "drives_warp_base", type: "direct" }], desc: { what: "Сжатие пространства впереди", appearance: "Искаженный свет", gives: "Сверхсветовое движение" } },
-  { id: "drives_warp_field", name: "Поле деформации", tree: "drives", level: 2, deps: [{ id: "drives_warp_bubble", type: "direct" }], desc: { what: "Устойчивое пространственное искажение", appearance: "Радужная оболочка", gives: "Управляемый варп" } },
-  { id: "drives_warp_stabil", name: "Стабилизатор варпа", tree: "drives", level: 3, deps: [{ id: "drives_warp_field", type: "direct" }], desc: { what: "Обратная связь по метрике", appearance: "Гироскопы", gives: "Плавный вход/выход" } },
-  { id: "drives_warp_nav", name: "Варп-навигация", tree: "drives", level: 4, deps: [{ id: "drives_warp_stabil", type: "direct" }], desc: { what: "Учет гравитационных колодцев", appearance: "Голографическая карта", gives: "Избежание препятствий" } },
-  { id: "drives_warp_energy", name: "Энергоемкий варп", tree: "drives", level: 4, deps: [{ id: "drives_warp_field", type: "direct" }], desc: { what: "Использование экзотической материи", appearance: "Фиолетовые разряды", gives: "Снижение затрат" } },
-  { id: "drives_warp_drive", name: "Полноценный варп-двигатель", tree: "drives", level: 5, deps: [{ id: "drives_warp_nav", type: "direct" }, { id: "drives_warp_energy", type: "direct" }], desc: { what: "Инженерное решение", appearance: "Массивное кольцо", gives: "Межзвездные перелеты" } },
-  // Поддерево quantum
-  { id: "drives_qdrive_base", name: "Квантовый двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Использование квантовых флуктуаций", appearance: "Мерцающая матрица", gives: "Теоретическая основа" } },
-  { id: "drives_qdrive_entangle", name: "Запутанность для тяги", tree: "drives", level: 1, deps: [{ id: "drives_qdrive_base", type: "direct" }], desc: { what: "Мгновенная передача импульса", appearance: "Светящиеся пары", gives: "Нелокальное движение" } },
-  { id: "drives_qdrive_tunnel", name: "Квантовый туннель", tree: "drives", level: 2, deps: [{ id: "drives_qdrive_entangle", type: "direct" }], desc: { what: "Вероятностное перемещение", appearance: "Размытая сфера", gives: "Кратковременные скачки" } },
-  { id: "drives_qdrive_flux", name: "Флуктуационный ускоритель", tree: "drives", level: 3, deps: [{ id: "drives_qdrive_tunnel", type: "direct" }], desc: { what: "Усиление вакуумных флуктуаций", appearance: "Искрящиеся узлы", gives: "Постоянная малая тяга" } },
-  { id: "drives_qdrive_stable", name: "Стабилизация квантового привода", tree: "drives", level: 4, deps: [{ id: "drives_qdrive_flux", type: "direct" }], desc: { what: "Контроль декогеренции", appearance: "Голубые лазеры", gives: "Надежность" } },
-  { id: "drives_qdrive_hyper", name: "Гиперпространственный квантовый", tree: "drives", level: 5, deps: [{ id: "drives_qdrive_stable", type: "direct" }], desc: { what: "Выход в дополнительные измерения", appearance: "Мерцающий портал", gives: "Мгновенные переходы" } },
-  // Поддерево pulse
-  { id: "drives_pulse_base", name: "Импульсный двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Дискретные выбросы плазмы", appearance: "Пулеметные вспышки", gives: "Дискретная тяга" } },
-  { id: "drives_pulse_magneto", name: "Магнитно-импульсный", tree: "drives", level: 1, deps: [{ id: "drives_pulse_base", type: "direct" }], desc: { what: "Ускорение через магнитную катушку", appearance: "Синие кольца", gives: "Более мощные импульсы" } },
-  { id: "drives_pulse_induct", name: "Индукционный ускоритель", tree: "drives", level: 2, deps: [{ id: "drives_pulse_magneto", type: "direct" }], desc: { what: "Электромагнитная индукция", appearance: "Спиральные обмотки", gives: "Высокая частота" } },
-  { id: "drives_pulse_capacitor", name: "Емкостной накопитель", tree: "drives", level: 3, deps: [{ id: "drives_pulse_induct", type: "direct" }], desc: { what: "Сверхконденсаторы для импульсов", appearance: "Большие батареи", gives: "Энергия для залпов" } },
-  { id: "drives_pulse_freq", name: "Высокочастотный режим", tree: "drives", level: 4, deps: [{ id: "drives_pulse_capacitor", type: "direct" }], desc: { what: "Десятки импульсов в секунду", appearance: "Почти непрерывное свечение", gives: "Гладкая тяга" } },
-  { id: "drives_pulse_burst", name: "Сверхмощный залп", tree: "drives", level: 5, deps: [{ id: "drives_pulse_freq", type: "direct" }], desc: { what: "Синхронизация всех катушек", appearance: "Ослепительная вспышка", gives: "Аварийное ускорение" } },
-  // Поддерево thruster
-  { id: "drives_thruster_base", name: "Реактивный ускоритель", tree: "drives", level: 0, deps: [], desc: { what: "Простой газовый реактивный", appearance: "Маленькие сопла", gives: "Точная ориентация" } },
-  { id: "drives_thruster_chem", name: "Химический ускоритель", tree: "drives", level: 1, deps: [{ id: "drives_thruster_base", type: "direct" }], desc: { what: "Бинарное топливо", appearance: "Красные струи", gives: "Большая мощность" } },
-  { id: "drives_thruster_elec", name: "Электрический ускоритель", tree: "drives", level: 2, deps: [{ id: "drives_thruster_chem", type: "direct" }], desc: { what: "Электротермический нагрев", appearance: "Белые нити", gives: "Экономичность" } },
-  { id: "drives_thruster_gimbal", name: "Поворотные ускорители", tree: "drives", level: 3, deps: [{ id: "drives_thruster_elec", type: "direct" }], desc: { what: "Карданный подвес", appearance: "Шарниры", gives: "Векторное управление" } },
-  { id: "drives_thruster_array", name: "Матрица ускорителей", tree: "drives", level: 4, deps: [{ id: "drives_thruster_gimbal", type: "direct" }], desc: { what: "Множество маленьких сопел", appearance: "Соты", gives: "Распределенная тяга" } },
-  { id: "drives_thruster_nano", name: "Наноускорители", tree: "drives", level: 5, deps: [{ id: "drives_thruster_array", type: "direct" }], desc: { what: "Микроэлектромеханические системы", appearance: "Невидимые глазу", gives: "Незаметные коррекции" } },
-  // Поддерево hybrid
-  { id: "drives_hybrid_base", name: "Гибридный двигатель", tree: "drives", level: 0, deps: [], desc: { what: "Сочетание химического и электрического", appearance: "Комбинированные сопла", gives: "Универсальность" } },
-  { id: "drives_hybrid_ionplasma", name: "Ионно-плазменный гибрид", tree: "drives", level: 1, deps: [{ id: "drives_hybrid_base", type: "direct" }], desc: { what: "Режимы переключения", appearance: "Переменный цвет", gives: "Эффективность на разных режимах" } },
-  { id: "drives_hybrid_nucl", name: "Ядерно-химический", tree: "drives", level: 2, deps: [{ id: "drives_hybrid_ionplasma", type: "direct" }], desc: { what: "Разогрев химического топлива реактором", appearance: "Свечение реактора", gives: "Промежуточная тяга" } },
-  { id: "drives_hybrid_multi", name: "Многотопливный", tree: "drives", level: 3, deps: [{ id: "drives_hybrid_nucl", type: "direct" }], desc: { what: "Автоматический выбор топлива", appearance: "Забортные баки", gives: "Гибкость миссии" } },
-  { id: "drives_hybrid_smart", name: "Интеллектуальный гибрид", tree: "drives", level: 4, deps: [{ id: "drives_hybrid_multi", type: "direct" }], desc: { what: "ИИ для оптимизации", appearance: "Мерцающие индикаторы", gives: "Максимальная эффективность" } },
 
-  // ---------- Дерево energy ----------
-  // Поддерево solar
-  { id: "energy_solar_base", name: "Солнечные панели", tree: "energy", level: 0, deps: [], desc: { what: "Фотоэлектрические элементы", appearance: "Синие пластины", gives: "Базовое питание" } },
-  { id: "energy_solar_panel", name: "Эффективные панели", tree: "energy", level: 1, deps: [{ id: "energy_solar_base", type: "direct" }], desc: { what: "Монокристаллический кремний", appearance: "Темно-синие квадраты", gives: "+30% КПД" } },
-  { id: "energy_solar_film", name: "Тонкопленочные батареи", tree: "energy", level: 2, deps: [{ id: "energy_solar_panel", type: "direct" }], desc: { what: "Гибкие панели на полимерах", appearance: "Серая пленка", gives: "Малый вес" } },
-  { id: "energy_solar_concentrate", name: "Концентраторы", tree: "energy", level: 3, deps: [{ id: "energy_solar_film", type: "direct" }], desc: { what: "Линзы для фокусировки", appearance: "Прозрачные выпуклости", gives: "Повышенная выработка" } },
-  { id: "energy_solar_space", name: "Космические солнечные", tree: "energy", level: 4, deps: [{ id: "energy_solar_concentrate", type: "direct" }], desc: { what: "Оптимизация под спектр в вакууме", appearance: "Золотистое покрытие", gives: "Высокая эффективность в космосе" } },
-  { id: "energy_solar_quantum", name: "Квантовые солнечные", tree: "energy", level: 5, deps: [{ id: "energy_solar_space", type: "direct" }], desc: { what: "Точки квантовых ям", appearance: "Мерцающие наноточки", gives: "Сверхвысокий КПД" } },
-  { id: "energy_solar_tower", name: "Орбитальная солнечная станция", tree: "energy", level: 5, deps: [{ id: "energy_solar_quantum", type: "direct" }], desc: { what: "Гигаваттные фермы", appearance: "Огромные крылья", gives: "Энергия для базы" } },
-  { id: "energy_solar_orbital", name: "Солнечные паруса-генераторы", tree: "energy", level: 4, deps: [{ id: "energy_solar_space", type: "direct" }], desc: { what: "Генерация от давления света", appearance: "Серебристые паруса", gives: "Доп. энергия в полете" } },
-  // Поддерево fusion
-  { id: "energy_fusion_base", name: "Термоядерный реактор", tree: "energy", level: 0, deps: [], desc: { what: "Магнитное удержание плазмы", appearance: "Тор с катушками", gives: "Обильная энергия" } },
-  { id: "energy_fusion_tokamak", name: "Токамак", tree: "energy", level: 1, deps: [{ id: "energy_fusion_base", type: "direct" }], desc: { what: "Тороидальная камера", appearance: "Крупное кольцо", gives: "Стабильный синтез" } },
-  { id: "energy_fusion_laser", name: "Лазерный синтез", tree: "energy", level: 2, deps: [{ id: "energy_fusion_tokamak", type: "direct" }], desc: { what: "Импульсные лазеры для зажигания", appearance: "Сферическая камера", gives: "Инерциальное удержание" } },
-  { id: "energy_fusion_magnetic", name: "Стелларатор", tree: "energy", level: 3, deps: [{ id: "energy_fusion_laser", type: "direct" }], desc: { what: "Винтовая магнитная конфигурация", appearance: "Замысловатая форма", gives: "Непрерывный режим" } },
-  { id: "energy_fusion_fuel", name: "Гелий-3 топливо", tree: "energy", level: 4, deps: [{ id: "energy_fusion_magnetic", type: "direct" }], desc: { what: "Анейтронный синтез", appearance: "Серебристые капсулы", gives: "Минимум радиации" } },
-  { id: "energy_fusion_ignition", name: "Зажигание прямого привода", tree: "energy", level: 5, deps: [{ id: "energy_fusion_fuel", type: "direct" }], desc: { what: "Сверхмощные лазеры", appearance: "Яркая вспышка", gives: "Энергетический выход > 10x" } },
-  { id: "energy_fusion_steady", name: "Стационарный синтез", tree: "energy", level: 5, deps: [{ id: "energy_fusion_ignition", type: "direct" }], desc: { what: "Беспрерывная работа годами", appearance: "Ровное свечение", gives: "Базовая мощность колонии" } },
-  { id: "energy_fusion_catalyzed", name: "Каталитический синтез", tree: "energy", level: 4, deps: [{ id: "energy_fusion_fuel", type: "direct" }], desc: { what: "Мюонный катализ", appearance: "Мерцающие зеленые точки", gives: "Снижение температуры" } },
-  { id: "energy_fusion_aneutronic", name: "Безнейтронный синтез", tree: "energy", level: 5, deps: [{ id: "energy_fusion_catalyzed", type: "direct" }], desc: { what: "Протон-борная реакция", appearance: "Заряженные частицы", gives: "Прямое преобразование в электричество" } },
-  // Поддерево antimatter
-  { id: "energy_am_base", name: "Удержание антивещества", tree: "energy", level: 0, deps: [], desc: { what: "Магнитные ловушки", appearance: "Светящиеся кольца", gives: "Хранение позитронов" } },
-  { id: "energy_am_trap", name: "Пеннинг-ловушка", tree: "energy", level: 1, deps: [{ id: "energy_am_base", type: "direct" }], desc: { what: "Комбинация электрических и магнитных полей", appearance: "Цилиндр с электродами", gives: "Удержание миллиардов частиц" } },
-  { id: "energy_am_production", name: "Генерация антиматерии", tree: "energy", level: 2, deps: [{ id: "energy_am_trap", type: "direct" }], desc: { what: "Лазерно-плазменный метод", appearance: "Искрящаяся камера", gives: "Создание позитронов на месте" } },
-  { id: "energy_am_reactor", name: "Антиматерия-реактор", tree: "energy", level: 3, deps: [{ id: "energy_am_production", type: "direct" }], desc: { what: "Аннигиляция с водородом", appearance: "Желтое сияние", gives: "Гигантская энергия" } },
-  { id: "energy_am_safety", name: "Безопасность антиматерии", tree: "energy", level: 4, deps: [{ id: "energy_am_reactor", type: "direct" }], desc: { what: "Аварийный сброс и поглощение", appearance: "Толстые стенки из вольфрама", gives: "Защита от взрыва" } },
-  { id: "energy_am_efficiency", name: "Высокоэффективная аннигиляция", tree: "energy", level: 5, deps: [{ id: "energy_am_safety", type: "direct" }], desc: { what: "Направление гамма-квантов", appearance: "Свинцовые отражатели", gives: "90% преобразования" } },
-  { id: "energy_am_storage", name: "Долговременное хранение", tree: "energy", level: 4, deps: [{ id: "energy_am_trap", type: "direct" }], desc: { what: "Криомагнитная ячейка", appearance: "Сверхпроводящая сфера", gives: "Годы хранения" } },
-  { id: "energy_am_harvest", name: "Сборка антиматерии из космоса", tree: "energy", level: 5, deps: [{ id: "energy_am_storage", type: "direct" }], desc: { what: "Магнитосферный захват", appearance: "Огромные петли", gives: "Добыча из поясов" } },
-  // Поддерево quantum
-  { id: "energy_qenergy_base", name: "Квантовое питание", tree: "energy", level: 0, deps: [], desc: { what: "Извлечение нулевой энергии", appearance: "Мерцающая плита", gives: "Теоретический источник" } },
-  { id: "energy_qenergy_vacuum", name: "Вакуумная энергия", tree: "energy", level: 1, deps: [{ id: "energy_qenergy_base", type: "direct" }], desc: { what: "Эффект Казимира", appearance: "Параллельные пластины", gives: "Микроскопическая мощность" } },
-  { id: "energy_qenergy_fluctuation", name: "Квантовые флуктуации", tree: "energy", level: 2, deps: [{ id: "energy_qenergy_vacuum", type: "direct" }], desc: { what: "Усиление спонтанных переходов", appearance: "Искрящиеся узлы", gives: "Стабильные нановатты" } },
-  { id: "energy_qenergy_extractor", name: "Экстрактор нулевой точки", tree: "energy", level: 3, deps: [{ id: "energy_qenergy_fluctuation", type: "direct" }], desc: { what: "Резонансная полость", appearance: "Золотистая сфера", gives: "Микроватты" } },
-  { id: "energy_qenergy_cell", name: "Квантовая ячейка", tree: "energy", level: 4, deps: [{ id: "energy_qenergy_extractor", type: "direct" }], desc: { what: "Массированный отбор", appearance: "Сотовая панель", gives: "Ватты на см²" } },
-  { id: "energy_qenergy_stable", name: "Стабилизированная квантовая энергия", tree: "energy", level: 5, deps: [{ id: "energy_qenergy_cell", type: "direct" }], desc: { what: "Подавление флуктуаций", appearance: "Темный куб", gives: "Киловатты без топлива" } },
-  // Поддерево capacitor
-  { id: "energy_cap_base", name: "Конденсатор", tree: "energy", level: 0, deps: [], desc: { what: "Классический накопитель", appearance: "Цилиндр с выводами", gives: "Быстрая разрядка" } },
-  { id: "energy_cap_super", name: "Суперконденсатор", tree: "energy", level: 1, deps: [{ id: "energy_cap_base", type: "direct" }], desc: { what: "Высокая удельная емкость", appearance: "Черные прямоугольники", gives: "100x больше заряда" } },
-  { id: "energy_cap_graphene", name: "Графеновый конденсатор", tree: "energy", level: 2, deps: [{ id: "energy_cap_super", type: "direct" }], desc: { what: "Монослойный электрод", appearance: "Прозрачная пленка", gives: "Огромная плотность" } },
-  { id: "energy_cap_quantum", name: "Квантовый конденсатор", tree: "energy", level: 3, deps: [{ id: "energy_cap_graphene", type: "direct" }], desc: { what: "Туннельный эффект", appearance: "Мерцающие наноструктуры", gives: "Мгновенный заряд" } },
-  { id: "energy_cap_array", name: "Батарея конденсаторов", tree: "energy", level: 4, deps: [{ id: "energy_cap_quantum", type: "direct" }], desc: { what: "Параллельно-последовательное включение", appearance: "Решетка", gives: "Высокое напряжение и емкость" } },
-  { id: "energy_cap_nano", name: "Наноконденсаторы", tree: "energy", level: 5, deps: [{ id: "energy_cap_array", type: "direct" }], desc: { what: "Интеграция в чипы", appearance: "Невидимые глазом", gives: "Энергия для микроустройств" } },
-  // Поддерево wireless
-  { id: "energy_wireless_base", name: "Индукционная передача", tree: "energy", level: 0, deps: [], desc: { what: "Магнитное поле ближнего поля", appearance: "Катушки", gives: "Зарядка на сантиметрах" } },
-  { id: "energy_wireless_microwave", name: "Микроволновая передача", tree: "energy", level: 1, deps: [{ id: "energy_wireless_base", type: "direct" }], desc: { what: "Выпрямительные антенны", appearance: "Сетчатые тарелки", gives: "Километровый луч" } },
-  { id: "energy_wireless_laser", name: "Лазерная передача", tree: "energy", level: 2, deps: [{ id: "energy_wireless_microwave", type: "direct" }], desc: { what: "Фотоэлектрический приемник", appearance: "Узкий луч", gives: "Высокая плотность" } },
-  { id: "energy_wireless_resonance", name: "Резонансная связь", tree: "energy", level: 3, deps: [{ id: "energy_wireless_laser", type: "direct" }], desc: { what: "Настройка частот", appearance: "Светящиеся кольца", gives: "Эффективность 90%" } },
-  { id: "energy_wireless_beam", name: "Направленный пучок", tree: "energy", level: 4, deps: [{ id: "energy_wireless_resonance", type: "direct" }], desc: { what: "Активное слежение", appearance: "Следящая антенна", gives: "Перемещение в полете" } },
-  { id: "energy_wireless_network", name: "Космическая энергосеть", tree: "energy", level: 5, deps: [{ id: "energy_wireless_beam", type: "direct" }], desc: { what: "Ретрансляторы на орбите", appearance: "Созвездие спутников", gives: "Глобальное покрытие" } },
-  // Поддерево fission
-  { id: "energy_fission_base", name: "Ядерный реактор деления", tree: "energy", level: 0, deps: [], desc: { what: "Уран-235, замедлитель", appearance: "Стальной корпус", gives: "Мегаватты" } },
-  { id: "energy_fission_fast", name: "Реактор на быстрых нейтронах", tree: "energy", level: 1, deps: [{ id: "energy_fission_base", type: "direct" }], desc: { what: "Без замедлителя", appearance: "Жидкий натрий", gives: "Воспроизводство топлива" } },
-  { id: "energy_fission_waste", name: "Переработка отходов", tree: "energy", level: 2, deps: [{ id: "energy_fission_fast", type: "direct" }], desc: { what: "Сжигание долгоживущих изотопов", appearance: "Химические колонны", gives: "Уменьшение радиотоксичности" } },
-  { id: "energy_fission_safety", name: "Пассивная безопасность", tree: "energy", level: 3, deps: [{ id: "energy_fission_waste", type: "direct" }], desc: { what: "Автоматическое глушение", appearance: "Поглощающие стержни", gives: "Без аварий" } },
-  { id: "energy_fission_pebble", name: "Шариковый реактор", tree: "energy", level: 4, deps: [{ id: "energy_fission_safety", type: "direct" }], desc: { what: "Топливные шарики", appearance: "Графитовая засыпка", gives: "Высокая температура" } },
-  { id: "energy_fission_compact", name: "Компактный реактор", tree: "energy", level: 5, deps: [{ id: "energy_fission_pebble", type: "direct" }], desc: { what: "Миниатюризация", appearance: "Чемоданчик", gives: "Портативная энергия" } },
-  // Поддерево cryo
-  { id: "energy_cryo_base", name: "Криогенное охлаждение", tree: "energy", level: 0, deps: [], desc: { what: "Жидкий гелий", appearance: "Серебряные баки", gives: "Сверхпроводимость" } },
-  { id: "energy_cryo_cell", name: "Криогенная ячейка", tree: "energy", level: 1, deps: [{ id: "energy_cryo_base", type: "direct" }], desc: { what: "Герметичные сосуды", appearance: "Изолированные контейнеры", gives: "Долгое хранение" } },
-  { id: "energy_cryo_superconductor", name: "Высокотемпературная сверхпроводимость", tree: "energy", level: 2, deps: [{ id: "energy_cryo_cell", type: "direct" }], desc: { what: "Керамика на жидком азоте", appearance: "Черные диски", gives: "Экономия энергии" } },
-  { id: "energy_cryo_magnetic", name: "Криомагнитное хранение", tree: "energy", level: 3, deps: [{ id: "energy_cryo_superconductor", type: "direct" }], desc: { what: "Сверхпроводящий магнитный накопитель", appearance: "Тороидальная катушка", gives: "Сохранение гигаджоулей" } },
-  { id: "energy_cryo_efficiency", name: "Эффективные криокулеры", tree: "energy", level: 4, deps: [{ id: "energy_cryo_magnetic", type: "direct" }], desc: { what: "Пульсационные трубки", appearance: "Вибрационные блоки", gives: "Энергопотребление < 100 Вт" } },
-  // Поддерево shield
-  { id: "energy_shield_base", name: "Энергетический щит", tree: "energy", level: 0, deps: [], desc: { what: "Плазменный барьер", appearance: "Мерцающая полупрозрачная стена", gives: "Защита от мелких частиц" } },
-  { id: "energy_shield_plasma", name: "Плазменный щит", tree: "energy", level: 1, deps: [{ id: "energy_shield_base", type: "direct" }], desc: { what: "Горячая ионизованная оболочка", appearance: "Красноватое свечение", gives: "Сжигание микрометеоритов" } },
-  { id: "energy_shield_force", name: "Силовой щит", tree: "energy", level: 2, deps: [{ id: "energy_shield_plasma", type: "direct" }], desc: { what: "Электромагнитное поле", appearance: "Голубая полусфера", gives: "Отклонение заряженных частиц" } },
-  { id: "energy_shield_adaptive", name: "Адаптивный щит", tree: "energy", level: 3, deps: [{ id: "energy_shield_force", type: "direct" }], desc: { what: "Изменение частоты под угрозу", appearance: "Мерцающие цвета", gives: "Защита от лазеров и кинетики" } },
-  { id: "energy_shield_regen", name: "Регенерирующий щит", tree: "energy", level: 4, deps: [{ id: "energy_shield_adaptive", type: "direct" }], desc: { what: "Быстрое восстановление", appearance: "Пульсирующее поле", gives: "Восстановление после попаданий" } },
-  { id: "energy_shield_bubble", name: "Пузырьковый щит", tree: "energy", level: 5, deps: [{ id: "energy_shield_regen", type: "direct" }], desc: { what: "Сферическая проекция", appearance: "Полностью прозрачная сфера", gives: "Защита от всех направлений" } },
-  { id: "energy_shield_quantum", name: "Квантовый щит", tree: "energy", level: 5, deps: [{ id: "energy_shield_bubble", type: "direct" }], desc: { what: "Запутывание частиц для поглощения", appearance: "Мерцающая рябь", gives: "Поглощение энергии атак" } },
-  // Поддерево backup
-  { id: "energy_backup_base", name: "Резервный источник", tree: "energy", level: 0, deps: [], desc: { what: "Химические батареи", appearance: "Свинцовые коробки", gives: "4 часа аварийной работы" } },
-  { id: "energy_backup_flywheel", name: "Маховичный накопитель", tree: "energy", level: 1, deps: [{ id: "energy_backup_base", type: "direct" }], desc: { what: "Кинетическое хранение", appearance: "Вращающийся цилиндр", gives: "Мгновенная отдача" } },
-  { id: "energy_backup_battery", name: "Литий-ионные резервы", tree: "energy", level: 2, deps: [{ id: "energy_backup_flywheel", type: "direct" }], desc: { what: "Высокая плотность", appearance: "Блоки 18650", gives: "Автономность 24ч" } },
-  { id: "energy_backup_fuelcell", name: "Топливные элементы", tree: "energy", level: 3, deps: [{ id: "energy_backup_battery", type: "direct" }], desc: { what: "Водород-кислород", appearance: "Слоистые пластины", gives: "Долговременное резервирование" } },
-  { id: "energy_backup_emergency", name: "Аварийный реактор", tree: "energy", level: 4, deps: [{ id: "energy_backup_fuelcell", type: "direct" }], desc: { what: "Компактный делящийся", appearance: "Маленький шар", gives: "Месяцы работы" } },
+  // ============================================================
+  // === ДЕРЕВО: НАНОТЕХНОЛОГИИ (67 нод) ===
+  // ============================================================
 
-  // ---------- Дерево lifecomm ----------
-  // Поддерево atmo
-  { id: "life_atmo_base", name: "Система жизнеобеспечения", tree: "lifecomm", level: 0, deps: [], desc: { what: "Подача кислорода, удаление CO2", appearance: "Шланги и вентиляторы", gives: "Воздух для дыхания" } },
-  { id: "life_atmo_scrubber", name: "Скруббер CO2", tree: "lifecomm", level: 1, deps: [{ id: "life_atmo_base", type: "direct" }], desc: { what: "Химическое поглощение углекислого газа", appearance: "Картриджи с гидроксидом", gives: "Удаление CO2" } },
-  { id: "life_atmo_o2", name: "Генератор кислорода", tree: "lifecomm", level: 2, deps: [{ id: "life_atmo_scrubber", type: "direct" }], desc: { what: "Электролиз воды", appearance: "Пузырящиеся электроды", gives: "Непрерывное пополнение O2" } },
-  { id: "life_atmo_co2", name: "Утилизация CO2 в кислород", tree: "lifecomm", level: 3, deps: [{ id: "life_atmo_o2", type: "direct" }], desc: { what: "Реакция Сабатье", appearance: "Нагретая камера", gives: "Замкнутый цикл" } },
-  { id: "life_atmo_pressure", name: "Контроль давления", tree: "lifecomm", level: 4, deps: [{ id: "life_atmo_co2", type: "direct" }], desc: { what: "Компенсация утечек", appearance: "Клапаны и датчики", gives: "Стабильная атмосфера" } },
-  { id: "life_atmo_humidity", name: "Управление влажностью", tree: "lifecomm", level: 3, deps: [{ id: "life_atmo_scrubber", type: "direct" }], desc: { what: "Конденсация и испарение", appearance: "Капельные уловители", gives: "Комфорт" } },
-  { id: "life_atmo_recycle", name: "Полная регенерация", tree: "lifecomm", level: 5, deps: [{ id: "life_atmo_pressure", type: "direct" }, { id: "life_atmo_humidity", type: "direct" }], desc: { what: "Замкнутая атмосфера", appearance: "Компактный блок", gives: "Независимость от запасов" } },
-  // Поддерево water
-  { id: "life_water_base", name: "Водоснабжение", tree: "lifecomm", level: 0, deps: [], desc: { what: "Хранение и подача воды", appearance: "Баки и трубы", gives: "Питьевая вода" } },
-  { id: "life_water_filter", name: "Фильтрация", tree: "lifecomm", level: 1, deps: [{ id: "life_water_base", type: "direct" }], desc: { what: "Мембранные фильтры", appearance: "Картриджи", gives: "Очистка от взвесей" } },
-  { id: "life_water_recycle", name: "Рециркуляция", tree: "lifecomm", level: 2, deps: [{ id: "life_water_filter", type: "direct" }], desc: { what: "Сбор и очистка конденсата", appearance: "Змеевики", gives: "Экономия воды" } },
-  { id: "life_water_electrolysis", name: "Электролиз воды", tree: "lifecomm", level: 3, deps: [{ id: "life_water_recycle", type: "direct" }], desc: { what: "Разложение на водород и кислород", appearance: "Электролизер", gives: "Топливо и воздух" } },
-  { id: "life_water_sterile", name: "Стерилизация", tree: "lifecomm", level: 4, deps: [{ id: "life_water_electrolysis", type: "direct" }], desc: { what: "УФ-облучение", appearance: "Лампы", gives: "Безопасность" } },
-  { id: "life_water_loop", name: "Замкнутый водооборот", tree: "lifecomm", level: 5, deps: [{ id: "life_water_sterile", type: "direct" }], desc: { what: "Полное восстановление", appearance: "Комплексная установка", gives: "Минимальные потери" } },
-  // Поддерево food
-  { id: "life_food_base", name: "Хранение продовольствия", tree: "lifecomm", level: 0, deps: [], desc: { what: "Сублимированные продукты", appearance: "Термопакеты", gives: "Долгий срок" } },
-  { id: "life_food_hydroponic", name: "Гидропоника", tree: "lifecomm", level: 1, deps: [{ id: "life_food_base", type: "direct" }], desc: { what: "Выращивание без почвы", appearance: "Стеллажи с лампами", gives: "Свежая зелень" } },
-  { id: "life_food_algae", name: "Культивирование водорослей", tree: "lifecomm", level: 2, deps: [{ id: "life_food_hydroponic", type: "direct" }], desc: { what: "Биореакторы с хлореллой", appearance: "Зеленые баки", gives: "Белок и кислород" } },
-  { id: "life_food_synth", name: "Синтезатор пищи", tree: "lifecomm", level: 3, deps: [{ id: "life_food_algae", type: "direct" }], desc: { what: "3D-печать из органики", appearance: "Принтер с картриджами", gives: "Любые блюда" } },
-  { id: "life_food_3d", name: "Молекулярный синтез", tree: "lifecomm", level: 4, deps: [{ id: "life_food_synth", type: "direct" }], desc: { what: "Сборка из атомов", appearance: "Белая капсула", gives: "Воссоздание вкусов" } },
-  { id: "life_food_nutrient", name: "Полноценное питание", tree: "lifecomm", level: 5, deps: [{ id: "life_food_3d", type: "direct" }], desc: { what: "Витамины и микроэлементы", appearance: "Добавки", gives: "Здоровье экипажа" } },
-  { id: "life_food_meat", name: "Культивированное мясо", tree: "lifecomm", level: 4, deps: [{ id: "life_food_synth", type: "direct" }], desc: { what: "Клеточные культуры", appearance: "Биореактор", gives: "Протеин" } },
-  { id: "life_food_fungi", name: "Грибные фермы", tree: "lifecomm", level: 3, deps: [{ id: "life_food_algae", type: "direct" }], desc: { what: "Мицелий на отходах", appearance: "Белые блоки", gives: "Утилизация" } },
-  // Поддерево radiation
-  { id: "life_rad_base", name: "Радиационная защита", tree: "lifecomm", level: 0, deps: [], desc: { what: "Пассивные экраны из алюминия", appearance: "Стенки", gives: "Снижение дозы" } },
-  { id: "life_rad_shield", name: "Водяная защита", tree: "lifecomm", level: 1, deps: [{ id: "life_rad_base", type: "direct" }], desc: { what: "Бак с водой вокруг отсеков", appearance: "Толстые стенки", gives: "Поглощение нейтронов" } },
-  { id: "life_rad_active", name: "Активная защита", tree: "lifecomm", level: 2, deps: [{ id: "life_rad_shield", type: "direct" }], desc: { what: "Электромагнитное поле", appearance: "Катушки", gives: "Отклонение заряженных частиц" } },
-  { id: "life_rad_repair", name: "Самовосстанавливающиеся материалы", tree: "lifecomm", level: 3, deps: [{ id: "life_rad_active", type: "direct" }], desc: { what: "Полимер с микрокапсулами", appearance: "Серая поверхность", gives: "Заделка микротрещин" } },
-  { id: "life_rad_monitor", name: "Дозиметрическая сеть", tree: "lifecomm", level: 4, deps: [{ id: "life_rad_repair", type: "direct" }], desc: { what: "Повсеместные датчики", appearance: "Маленькие кружки", gives: "Предупреждение" } },
-  { id: "life_rad_hardening", name: "Радиационно-стойкая электроника", tree: "lifecomm", level: 5, deps: [{ id: "life_rad_monitor", type: "direct" }], desc: { what: "Кремний-на-изоляторе", appearance: "Чипы в корпусах", gives: "Надежность систем" } },
-  // Поддерево cryosleep
-  { id: "life_cryo_base", name: "Криогенный сон", tree: "lifecomm", level: 0, deps: [], desc: { what: "Понижение температуры тела", appearance: "Капсула со льдом", gives: "Замедление метаболизма" } },
-  { id: "life_cryo_chamber", name: "Криокапсула", tree: "lifecomm", level: 1, deps: [{ id: "life_cryo_base", type: "direct" }], desc: { what: "Индивидуальная камера", appearance: "Стеклянный саркофаг", gives: "Безопасное охлаждение" } },
-  { id: "life_cryo_stasis", name: "Глубокая стазис", tree: "lifecomm", level: 2, deps: [{ id: "life_cryo_chamber", type: "direct" }], desc: { what: "Замена крови криопротектором", appearance: "Голубоватая жидкость", gives: "Остановка старения" } },
-  { id: "life_cryo_revival", name: "Быстрое пробуждение", tree: "lifecomm", level: 3, deps: [{ id: "life_cryo_stasis", type: "direct" }], desc: { what: "Микроволновой нагрев", appearance: "Импульсные магнетроны", gives: "Пробуждение за 10 мин" } },
-  { id: "life_cryo_longterm", name: "Долгосрочный криосон", tree: "lifecomm", level: 4, deps: [{ id: "life_cryo_revival", type: "direct" }], desc: { what: "Поддержание десятилетиями", appearance: "Энергонезависимый блок", gives: "Межзвездные перелеты" } },
-  { id: "life_cryo_medical", name: "Криомедицина", tree: "lifecomm", level: 5, deps: [{ id: "life_cryo_longterm", type: "direct" }], desc: { what: "Лечение повреждений во сне", appearance: "Медицинские интерфейсы", gives: "Восстановление тканей" } },
-  // Поддерево quantumcom
-  { id: "life_qcom_base", name: "Квантовая связь", tree: "lifecomm", level: 0, deps: [], desc: { what: "Передача кубитов", appearance: "Оптические столы", gives: "Абсолютная безопасность" } },
-  { id: "life_qcom_entangle", name: "Запутанность", tree: "lifecomm", level: 1, deps: [{ id: "life_qcom_base", type: "direct" }], desc: { what: "Пары фотонов", appearance: "Спонтанные кристаллы", gives: "Мгновенное изменение состояния" } },
-  { id: "life_qcom_transceiver", name: "Квантовый трансивер", tree: "lifecomm", level: 2, deps: [{ id: "life_qcom_entangle", type: "direct" }], desc: { what: "Приемопередатчик", appearance: "Компактная коробка", gives: "Связь в реальном времени" } },
-  { id: "life_qcom_network", name: "Квантовая сеть", tree: "lifecomm", level: 3, deps: [{ id: "life_qcom_transceiver", type: "direct" }], desc: { what: "Повторители", appearance: "Цепочка узлов", gives: "Передача на расстояние" } },
-  { id: "life_qcom_crypto", name: "Квантовая криптография", tree: "lifecomm", level: 4, deps: [{ id: "life_qcom_network", type: "direct" }], desc: { what: "Распределение ключей", appearance: "Защищенные чипы", gives: "Невзламываемая связь" } },
-  { id: "life_qcom_relay", name: "Квантовый ретранслятор", tree: "lifecomm", level: 5, deps: [{ id: "life_qcom_crypto", type: "direct" }], desc: { what: "Усиление запутанности", appearance: "Космическая станция", gives: "Связь через галактику" } },
-  { id: "life_qcom_router", name: "Квантовый маршрутизатор", tree: "lifecomm", level: 5, deps: [{ id: "life_qcom_relay", type: "direct" }], desc: { what: "Направление потоков", appearance: "Переключатель кубитов", gives: "Сложная топология" } },
-  // Поддерево lasercom
-  { id: "life_lasercom_base", name: "Лазерная связь", tree: "lifecomm", level: 0, deps: [], desc: { what: "Модулированный лазерный луч", appearance: "Красный диод", gives: "Высокоскоростная линия" } },
-  { id: "life_lasercom_mod", name: "Высокоскоростная модуляция", tree: "lifecomm", level: 1, deps: [{ id: "life_lasercom_base", type: "direct" }], desc: { what: "Махи-Цендера", appearance: "Интегральная оптика", gives: "Скорость 10 Гбит/с" } },
-  { id: "life_lasercom_pulse", name: "Импульсная связь", tree: "lifecomm", level: 2, deps: [{ id: "life_lasercom_mod", type: "direct" }], desc: { what: "Фемтосекундные вспышки", appearance: "Ультрабыстрые лазеры", gives: "Сверхплотная передача" } },
-  { id: "life_lasercom_frequency", name: "Многочастотная", tree: "lifecomm", level: 3, deps: [{ id: "life_lasercom_pulse", type: "direct" }], desc: { what: "WDM в оптике", appearance: "Разноцветные лучи", gives: "Увеличение пропускной способности" } },
-  { id: "life_lasercom_array", name: "Фазированная решетка", tree: "lifecomm", level: 4, deps: [{ id: "life_lasercom_frequency", type: "direct" }], desc: { what: "Управление лучом", appearance: "Матрица эмиттеров", gives: "Слежение без механики" } },
-  { id: "life_lasercom_deep", name: "Дальняя космическая связь", tree: "lifecomm", level: 5, deps: [{ id: "life_lasercom_array", type: "direct" }], desc: { what: "Адаптивная оптика", appearance: "Огромный телескоп", gives: "Связь с поясом Койпера" } },
-  // Поддерево sensors
-  { id: "life_sensor_base", name: "Оптические датчики", tree: "lifecomm", level: 0, deps: [], desc: { what: "Камеры видимого диапазона", appearance: "Объективы", gives: "Визуальное наблюдение" } },
-  { id: "life_sensor_optical", name: "Мультиспектральная оптика", tree: "lifecomm", level: 1, deps: [{ id: "life_sensor_base", type: "direct" }], desc: { what: "ИК, УФ, видимый", appearance: "Турели", gives: "Распознавание объектов" } },
-  { id: "life_sensor_infrared", name: "Тепловизоры", tree: "lifecomm", level: 2, deps: [{ id: "life_sensor_optical", type: "direct" }], desc: { what: "Болометры", appearance: "Серые матрицы", gives: "Обнаружение скрытых" } },
-  { id: "life_sensor_lidar", name: "Лидар", tree: "lifecomm", level: 3, deps: [{ id: "life_sensor_infrared", type: "direct" }], desc: { what: "Лазерное сканирование", appearance: "Вращающаяся головка", gives: "3D-карты" } },
-  { id: "life_sensor_radar", name: "Радар", tree: "lifecomm", level: 4, deps: [{ id: "life_sensor_lidar", type: "direct" }], desc: { what: "СВЧ-детекция", appearance: "Параболическая антенна", gives: "Обнаружение металла" } },
-  { id: "life_sensor_gravity", name: "Гравиметры", tree: "lifecomm", level: 5, deps: [{ id: "life_sensor_radar", type: "direct" }], desc: { what: "Сверхпроводящие", appearance: "Чувствительные подвесы", gives: "Поиск скрытых масс" } },
-  { id: "life_sensor_subspace", name: "Подпространственные сенсоры", tree: "lifecomm", level: 5, deps: [{ id: "life_sensor_gravity", type: "direct" }], desc: { what: "Искажения метрики", appearance: "Кольца", gives: "Детекция варп-полей" } },
-  { id: "life_sensor_quantum", name: "Квантовые сенсоры", tree: "lifecomm", level: 4, deps: [{ id: "life_sensor_lidar", type: "direct" }], desc: { what: "NV-центры", appearance: "Алмазные пластины", gives: "Сверхчувствительность" } },
-  { id: "life_sensor_neutrino", name: "Нейтринный детектор", tree: "lifecomm", level: 5, deps: [{ id: "life_sensor_quantum", type: "direct" }], desc: { what: "Огромный резервуар", appearance: "Бак с водой и ФЭУ", gives: "Видение сквозь планеты" } },
-  // Поддерево nav
-  { id: "life_nav_base", name: "Инерциальная навигация", tree: "lifecomm", level: 0, deps: [], desc: { what: "Гироскопы и акселерометры", appearance: "Блок датчиков", gives: "Счисление пути" } },
-  { id: "life_nav_gyro", name: "Кольцевые лазерные гироскопы", tree: "lifecomm", level: 1, deps: [{ id: "life_nav_base", type: "direct" }], desc: { what: "Эффект Саньяка", appearance: "Треугольные резонаторы", gives: "Точность без дрейфа" } },
-  { id: "life_nav_star", name: "Звездная навигация", tree: "lifecomm", level: 2, deps: [{ id: "life_nav_gyro", type: "direct" }], desc: { what: "Каталог звезд", appearance: "Телескоп", gives: "Абсолютное позиционирование" } },
-  { id: "life_nav_gps", name: "Глобальная спутниковая система", tree: "lifecomm", level: 3, deps: [{ id: "life_nav_star", type: "direct" }], desc: { what: "Триангуляция", appearance: "Созвездие спутников", gives: "Точность до метра" } },
-  { id: "life_nav_inertial", name: "Продвинутая инерциальная", tree: "lifecomm", level: 4, deps: [{ id: "life_nav_gps", type: "direct" }], desc: { what: "Коррекция ускорений", appearance: "Микроэлектромеханика", gives: "Надежность в глубоком космосе" } },
-  { id: "life_nav_quantum", name: "Квантовая навигация", tree: "lifecomm", level: 5, deps: [{ id: "life_nav_inertial", type: "direct" }], desc: { what: "Атомные интерферометры", appearance: "Холодные атомы", gives: "Сверхточность" } },
-  // Поддерево gravity
-  { id: "life_grav_base", name: "Искусственная гравитация", tree: "lifecomm", level: 0, deps: [], desc: { what: "Вращающиеся отсеки", appearance: "Колесо", gives: "Центробежная сила" } },
-  { id: "life_grav_plate", name: "Гравитационные плиты", tree: "lifecomm", level: 1, deps: [{ id: "life_grav_base", type: "direct" }], desc: { what: "Псевдогравитация через ускорение", appearance: "Платформы", gives: "Локальное притяжение" } },
-  { id: "life_grav_rotating", name: "Сегментное вращение", tree: "lifecomm", level: 2, deps: [{ id: "life_grav_plate", type: "direct" }], desc: { what: "Раздельные вращающиеся модули", appearance: "Стыковочные узлы", gives: "Гибкость станции" } },
-  { id: "life_grav_magnetic", name: "Магнитная гравитация", tree: "lifecomm", level: 3, deps: [{ id: "life_grav_rotating", type: "direct" }], desc: { what: "Феррожидкости под ногами", appearance: "Черные полы", gives: "Притяжение для обуви" } },
-  { id: "life_grav_field", name: "Полевая гравитация", tree: "lifecomm", level: 4, deps: [{ id: "life_grav_magnetic", type: "direct" }], desc: { what: "Эффект Брайдена", appearance: "Конденсаторы с высоким напряжением", gives: "Истинное g" } },
-  { id: "life_grav_singularity", name: "Микрогравитационная сингулярность", tree: "lifecomm", level: 5, deps: [{ id: "life_grav_field", type: "direct" }], desc: { what: "Микроскопическая черная дыра", appearance: "Сфера Хокинга", gives: "Гравитация по желанию" } },
-  { id: "life_grav_control", name: "Управление гравитацией", tree: "lifecomm", level: 5, deps: [{ id: "life_grav_singularity", type: "direct" }], desc: { what: "Векторная регулировка", appearance: "Пулы", gives: "Антигравитация" } },
-  { id: "life_grav_inverter", name: "Инвертор гравитации", tree: "lifecomm", level: 4, deps: [{ id: "life_grav_field", type: "direct" }], desc: { what: "Отталкивание", appearance: "Синие пластины", gives: "Левитация" } },
-  { id: "life_grav_compensator", name: "Компенсатор перегрузок", tree: "lifecomm", level: 5, deps: [{ id: "life_grav_inverter", type: "direct" }], desc: { what: "Гашение ускорений", appearance: "Громоздкие кресла", gives: "Защита от g-сил" } }
+  // -- nano_assembly (7 нод) --
+  {
+    id: "nano_base", name: "Основы нанотехнологий", tree: "nano", level: 0, deps: [],
+    desc: { what: "Фундаментальная теория управления веществом на молекулярном уровне", appearance: "Светящаяся схема молекулярных цепочек", gives: "Открывает все ветки нанотехнологий" }
+  },
+  {
+    id: "nano_arm1", name: "Нано-манипулятор I", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Простой манипулятор для сборки наночастиц", appearance: "Механический зажим размером с молекулу", gives: "+10% скорость сборки" }
+  },
+  {
+    id: "nano_arm2", name: "Нано-манипулятор II", tree: "nano", level: 2,
+    deps: [{ id: "nano_arm1", type: "direct" }],
+    desc: { what: "Улучшенный манипулятор с параллельной сборкой", appearance: "Решётка из синхронизированных захватов", gives: "+25% скорость сборки, -5% брак" }
+  },
+  {
+    id: "nano_arm3", name: "Нано-манипулятор III", tree: "nano", level: 3,
+    deps: [{ id: "nano_arm2", type: "direct" }],
+    desc: { what: "Автономный манипулятор с ИИ-корректировкой", appearance: "Прозрачный куб с видимыми манипуляциями", gives: "Авторемонт изделий" }
+  },
+  {
+    id: "nano_fab1", name: "Нано-фабрикатор I", tree: "nano", level: 2,
+    deps: [{ id: "nano_arm1", type: "direct" }],
+    desc: { what: "Мини-завод для производства нанодеталей", appearance: "Миниатюрная производственная линия", gives: "Производство нано-компонентов" }
+  },
+  {
+    id: "nano_fab2", name: "Нано-фабрикатор II", tree: "nano", level: 3,
+    deps: [{ id: "nano_fab1", type: "direct" }],
+    desc: { what: "Высокоскоростная фабрикация с самодиагностикой", appearance: "Золотые потоки наночастиц", gives: "×3 пропускная способность" }
+  },
+  {
+    id: "nano_fab3", name: "Универсальный репликатор", tree: "nano", level: 4,
+    deps: [{ id: "nano_fab2", type: "direct" }, { id: "nano_cpu3", type: "indirect" }],
+    desc: { what: "Репликатор способный копировать любой предмет на атомном уровне", appearance: "Камера с ярко-синим сиянием", gives: "Синтез любых объектов из сырья" }
+  },
+
+  // -- nano_medicine (5 нод) --
+  {
+    id: "nano_med1", name: "Нано-диагностика", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Введение диагностических наноботов в кровоток", appearance: "Инъекционная капсула с синим свечением", gives: "Мгновенная диагностика болезней" }
+  },
+  {
+    id: "nano_med2", name: "Нано-хирург", tree: "nano", level: 2,
+    deps: [{ id: "nano_med1", type: "direct" }],
+    desc: { what: "Роботизированные наноботы-хирурги", appearance: "Облако частиц внутри организма", gives: "Автохирургия, +30% выживаемость" }
+  },
+  {
+    id: "nano_med3", name: "Нано-иммунитет", tree: "nano", level: 3,
+    deps: [{ id: "nano_med2", type: "direct" }],
+    desc: { what: "Постоянная нано-охрана иммунной системы", appearance: "Мерцающая аура вокруг организма", gives: "Иммунитет к болезням класса C" }
+  },
+  {
+    id: "nano_med4", name: "Клеточная регенерация", tree: "nano", level: 4,
+    deps: [{ id: "nano_med3", type: "direct" }],
+    desc: { what: "Восстановление поврежденных тканей за секунды", appearance: "Зелёные вспышки на ранах", gives: "+50 HP/с регенерации" }
+  },
+  {
+    id: "nano_med5", name: "Биологическое бессмертие", tree: "nano", level: 5,
+    deps: [{ id: "nano_med4", type: "direct" }, { id: "nano_cpu4", type: "indirect" }],
+    desc: { what: "Полная остановка клеточного старения", appearance: "Ослепительное белое свечение тела", gives: "Персонажи не стареют" }
+  },
+
+  // -- nano_energy (5 нод) --
+  {
+    id: "nano_en1", name: "Нано-ячейка", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Накопитель энергии на нанотрубках", appearance: "Кристалл с пульсирующим светом", gives: "+20% ёмкость батарей" }
+  },
+  {
+    id: "nano_en2", name: "Нано-генератор", tree: "nano", level: 2,
+    deps: [{ id: "nano_en1", type: "direct" }],
+    desc: { what: "Генератор на основе вибраций наноструктур", appearance: "Вибрирующая платформа с излучением", gives: "Автономная выработка энергии" }
+  },
+  {
+    id: "nano_en3", name: "Квантовый конденсатор", tree: "nano", level: 3,
+    deps: [{ id: "nano_en2", type: "direct" }],
+    desc: { what: "Хранение энергии в квантовом состоянии", appearance: "Сфера с фиолетовым вихрем", gives: "×5 плотность хранения энергии" }
+  },
+  {
+    id: "nano_en4", name: "Нано-реактор", tree: "nano", level: 4,
+    deps: [{ id: "nano_en3", type: "direct" }],
+    desc: { what: "Миниатюрный термоядерный реактор на наноуровне", appearance: "Плазменный шар в клетке из нанотрубок", gives: "Неограниченная энергия для базы" }
+  },
+  {
+    id: "nano_en5", name: "Нулевая точка", tree: "nano", level: 5,
+    deps: [{ id: "nano_en4", type: "direct" }],
+    desc: { what: "Извлечение энергии из вакуума пространства", appearance: "Мерцающая пустота с искрами", gives: "Энергия из ничего, бесплатное производство" }
+  },
+
+  // -- nano_armor (4 ноды) --
+  {
+    id: "nano_ar1", name: "Нано-покрытие", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Защитный слой наночастиц на поверхности брони", appearance: "Блестящий металлический отлив", gives: "+15% защита от физурона" }
+  },
+  {
+    id: "nano_ar2", name: "Адаптивная броня", tree: "nano", level: 2,
+    deps: [{ id: "nano_ar1", type: "direct" }],
+    desc: { what: "Броня, перестраивающая структуру под тип удара", appearance: "Поверхность с волнообразными узорами", gives: "+30% защита, адаптация к 3 типам урона" }
+  },
+  {
+    id: "nano_ar3", name: "Регенерирующий щит", tree: "nano", level: 3,
+    deps: [{ id: "nano_ar2", type: "direct" }],
+    desc: { what: "Броня самовосстанавливается между атаками", appearance: "Трещины заполняются светящимся материалом", gives: "Авторемонт 20 HP/с" }
+  },
+  {
+    id: "nano_ar4", name: "Сингулярный панцирь", tree: "nano", level: 4,
+    deps: [{ id: "nano_ar3", type: "direct" }, { id: "nano_en3", type: "direct" }],
+    desc: { what: "Нано-броня с силовыми щитами", appearance: "Пульсирующий энергетический слой", gives: "Физический и энергетический щит одновременно" }
+  },
+
+  // -- nano_compute (5 нод) --
+  {
+    id: "nano_cpu1", name: "Нано-процессор", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Вычислительный элемент размером с молекулу", appearance: "Невидимая цепочка логических вентилей", gives: "+100% скорость локальных вычислений" }
+  },
+  {
+    id: "nano_cpu2", name: "Нейронная решётка", tree: "nano", level: 2,
+    deps: [{ id: "nano_cpu1", type: "direct" }],
+    desc: { what: "Нано-нейросеть для параллельных вычислений", appearance: "Сеть синих светящихся нитей", gives: "Параллельная обработка 1000 задач" }
+  },
+  {
+    id: "nano_cpu3", name: "Биологический сопроцессор", tree: "nano", level: 3,
+    deps: [{ id: "nano_cpu2", type: "direct" }, { id: "nano_med2", type: "direct" }],
+    desc: { what: "Нано-чип, интегрированный в нейроны мозга", appearance: "Мерцание в области виска", gives: "×10 интеллект операторов" }
+  },
+  {
+    id: "nano_cpu4", name: "Квантовый нано-ИИ", tree: "nano", level: 4,
+    deps: [{ id: "nano_cpu3", type: "direct" }],
+    desc: { what: "Искусственный интеллект на квантовых наноэлементах", appearance: "Пульсирующий синий куб", gives: "Автономное управление всеми системами" }
+  },
+  {
+    id: "nano_cpu5", name: "Роевой разум", tree: "nano", level: 5,
+    deps: [{ id: "nano_cpu4", type: "direct" }, { id: "nano_sw3", type: "direct" }],
+    desc: { what: "Распределённый интеллект в миллиардах наноботов", appearance: "Облако частиц, движущееся как единый организм", gives: "Коллективный ИИ, неуязвимый к ЭМИ" }
+  },
+
+  // -- nano_weapons (4 ноды) --
+  {
+    id: "nano_wp1", name: "Нано-клинок", tree: "nano", level: 2,
+    deps: [{ id: "nano_arm2", type: "direct" }],
+    desc: { what: "Лезвие толщиной в молекулу", appearance: "Почти невидимое прозрачное лезвие", gives: "Игнорирует броню класса B" }
+  },
+  {
+    id: "nano_wp2", name: "Рой-убийца", tree: "nano", level: 3,
+    deps: [{ id: "nano_wp1", type: "direct" }, { id: "nano_sw1", type: "direct" }],
+    desc: { what: "Рой боевых наноботов, проникающих сквозь броню", appearance: "Тёмное облако с красными искрами", gives: "Атака игнорирует любую броню" }
+  },
+  {
+    id: "nano_wp3", name: "Молекулярный дезинтегратор", tree: "nano", level: 4,
+    deps: [{ id: "nano_wp2", type: "direct" }],
+    desc: { what: "Разрушение молекулярных связей цели", appearance: "Красный луч, объект рассыпается в пыль", gives: "Мгновенное уничтожение структур класса C" }
+  },
+  {
+    id: "nano_wp4", name: "Нано-вирус", tree: "nano", level: 5,
+    deps: [{ id: "nano_wp3", type: "direct" }],
+    desc: { what: "Самовоспроизводящийся нано-агент деструкции", appearance: "Невидимое заражение, постепенное разрушение", gives: "Необратимое заражение инфраструктуры врага" }
+  },
+
+  // -- nano_env (3 ноды) --
+  {
+    id: "nano_env1", name: "Нано-очистка", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Наноботы-санитары для очистки загрязнённых зон", appearance: "Серый туман, после которого чистота", gives: "Очистка загрязнённых территорий за 1 ход" }
+  },
+  {
+    id: "nano_env2", name: "Нано-терраформинг", tree: "nano", level: 3,
+    deps: [{ id: "nano_env1", type: "direct" }, { id: "nano_fab1", type: "direct" }],
+    desc: { what: "Изменение состава атмосферы и почвы наноботами", appearance: "Волны трансформации покрывают ландшафт", gives: "Терраформирование планет" }
+  },
+  {
+    id: "nano_env3", name: "Нано-биосфера", tree: "nano", level: 5,
+    deps: [{ id: "nano_env2", type: "direct" }, { id: "nano_med4", type: "indirect" }],
+    desc: { what: "Искусственная экосистема на основе наноботов", appearance: "Живой пейзаж с нано-существами", gives: "Создание обитаемых миров" }
+  },
+
+  // -- nano_swarm (4 ноды) --
+  {
+    id: "nano_sw1", name: "Прото-рой", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Первый управляемый рой из 1 млн наноботов", appearance: "Облако частиц, реагирующее на команды", gives: "Базовые роевые операции" }
+  },
+  {
+    id: "nano_sw2", name: "Рой-строитель", tree: "nano", level: 2,
+    deps: [{ id: "nano_sw1", type: "direct" }],
+    desc: { what: "Рой для быстрого строительства конструкций", appearance: "Быстро возводимые здания из частиц", gives: "×5 скорость строительства" }
+  },
+  {
+    id: "nano_sw3", name: "Автономный рой", tree: "nano", level: 3,
+    deps: [{ id: "nano_sw2", type: "direct" }, { id: "nano_cpu2", type: "direct" }],
+    desc: { what: "Рой с независимым принятием решений", appearance: "Интеллектуальное облако наноботов", gives: "Рой действует без оператора" }
+  },
+  {
+    id: "nano_sw4", name: "Мета-рой", tree: "nano", level: 5,
+    deps: [{ id: "nano_sw3", type: "direct" }, { id: "nano_cpu5", type: "cosvennaya" }],
+    desc: { what: "Мегаструктура из триллионов наноботов", appearance: "Тёмная туча планетарного масштаба", gives: "Перестройка целых планет" }
+  },
+
+  // -- nano_sense (4 ноды) --
+  {
+    id: "nano_sns1", name: "Нано-зонд", tree: "nano", level: 1,
+    deps: [{ id: "nano_base", type: "direct" }],
+    desc: { what: "Зонд для сканирования на молекулярном уровне", appearance: "Крошечный светящийся шар", gives: "Сканирование состава объектов" }
+  },
+  {
+    id: "nano_sns2", name: "Молекулярный радар", tree: "nano", level: 2,
+    deps: [{ id: "nano_sns1", type: "direct" }],
+    desc: { what: "Обнаружение объектов по молекулярной сигнатуре", appearance: "Радарное кольцо с молекулярными пиками", gives: "Обнаружение скрытых структур" }
+  },
+  {
+    id: "nano_sns3", name: "Нано-шпион", tree: "nano", level: 3,
+    deps: [{ id: "nano_sns2", type: "direct" }],
+    desc: { what: "Незаметный нанобот-разведчик", appearance: "Невидимый, выдаётся только теплом", gives: "Прослушивание и видеосъёмка в секретных зонах" }
+  },
+  {
+    id: "nano_sns4", name: "Сеть нано-сенсоров", tree: "nano", level: 4,
+    deps: [{ id: "nano_sns3", type: "direct" }, { id: "nano_sw2", type: "direct" }],
+    desc: { what: "Планетарная сеть из сенсорных наноботов", appearance: "Невидимая сеть, охватывающая планету", gives: "Тотальный контроль планеты" }
+  },
+
+  // -- nano_cloak (3 ноды) --
+  {
+    id: "nano_clk1", name: "Нано-камуфляж", tree: "nano", level: 2,
+    deps: [{ id: "nano_ar1", type: "direct" }],
+    desc: { what: "Поверхность, имитирующая окружающую среду", appearance: "Объект растворяется в фоне", gives: "Визуальная невидимость" }
+  },
+  {
+    id: "nano_clk2", name: "Полная невидимость", tree: "nano", level: 3,
+    deps: [{ id: "nano_clk1", type: "direct" }, { id: "nano_en2", type: "direct" }],
+    desc: { what: "Искажение всех длин волн вокруг объекта", appearance: "Объект полностью невидим", gives: "Невидимость во всём спектре" }
+  },
+  {
+    id: "nano_clk3", name: "Хаотический мимик", tree: "nano", level: 4,
+    deps: [{ id: "nano_clk2", type: "direct" }],
+    desc: { what: "Маскировка под любой объект или существо", appearance: "Трансформация формы и цвета в реальном времени", gives: "Полная смена внешнего вида" }
+  },
+
+  // ============================================================
+  // === ДЕРЕВО: ПСИХОТЕХНОЛОГИИ (67 нод) ===
+  // ============================================================
+
+  // -- psi_core (4 ноды) --
+  {
+    id: "psi_base", name: "Основы психотехнологий", tree: "psi", level: 0, deps: [],
+    desc: { what: "Теория взаимодействия сознания с физической реальностью", appearance: "Пульсирующий оранжевый кристалл", gives: "Открывает все ветки психотехнологий" }
+  },
+  {
+    id: "psi_amp1", name: "Пси-усилитель I", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Шлем, усиливающий пси-сигналы мозга", appearance: "Металлический обруч с синими огнями", gives: "+20% радиус пси-способностей" }
+  },
+  {
+    id: "psi_amp2", name: "Пси-усилитель II", tree: "psi", level: 2,
+    deps: [{ id: "psi_amp1", type: "direct" }],
+    desc: { what: "Вживляемый усилитель нейросигналов", appearance: "Светящийся имплант на шее", gives: "+50% сила пси-атак" }
+  },
+  {
+    id: "psi_amp3", name: "Нейро-резонатор", tree: "psi", level: 3,
+    deps: [{ id: "psi_amp2", type: "direct" }],
+    desc: { what: "Резонансная камера для синхронизации нескольких сознаний", appearance: "Кристаллическая башня с оранжевым свечением", gives: "Усиление всех пси-способностей ×3 для группы" }
+  },
+
+  // -- psi_tele (4 ноды) --
+  {
+    id: "psi_tele1", name: "Чтение мыслей", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Улавливание поверхностных мыслей цели", appearance: "Волны от головы оператора", gives: "Считывание намерений врагов" }
+  },
+  {
+    id: "psi_tele2", name: "Внушение", tree: "psi", level: 2,
+    deps: [{ id: "psi_tele1", type: "direct" }],
+    desc: { what: "Передача команд напрямую в сознание цели", appearance: "Видимые нити между операторами", gives: "Управление НПС на короткий срок" }
+  },
+  {
+    id: "psi_tele3", name: "Глубокое сканирование", tree: "psi", level: 3,
+    deps: [{ id: "psi_tele2", type: "direct" }],
+    desc: { what: "Извлечение воспоминаний и секретов из сознания", appearance: "Кружащиеся образы вокруг цели", gives: "Узнать любые секреты цели" }
+  },
+  {
+    id: "psi_tele4", name: "Ментальная сеть", tree: "psi", level: 4,
+    deps: [{ id: "psi_tele3", type: "direct" }, { id: "psi_grp1", type: "direct" }],
+    desc: { what: "Телепатическая связь с группой до 100 человек", appearance: "Оранжевая сеть между людьми", gives: "Мгновенная координация без оборудования" }
+  },
+
+  // -- psi_tele_k (4 ноды) --
+  {
+    id: "psi_tk1", name: "Телекинез I", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Перемещение небольших объектов силой мысли", appearance: "Объект парит с оранжевой аурой", gives: "Перемещение объектов до 10 кг" }
+  },
+  {
+    id: "psi_tk2", name: "Телекинез II", tree: "psi", level: 2,
+    deps: [{ id: "psi_tk1", type: "direct" }],
+    desc: { what: "Управление крупными объектами и метание", appearance: "Мощные волны от оператора", gives: "Перемещение объектов до 1 тонны" }
+  },
+  {
+    id: "psi_tk3", name: "Кинетический удар", tree: "psi", level: 3,
+    deps: [{ id: "psi_tk2", type: "direct" }],
+    desc: { what: "Концентрированный телекинетический разряд", appearance: "Ударная волна, разрушающая препятствия", gives: "Урон 500 единиц, разрушение стен" }
+  },
+  {
+    id: "psi_tk4", name: "Гравитационный контроль", tree: "psi", level: 4,
+    deps: [{ id: "psi_tk3", type: "direct" }],
+    desc: { what: "Создание зон аномальной гравитации", appearance: "Искажение пространства вокруг объектов", gives: "Зона невесомости или ×5 гравитации" }
+  },
+
+  // -- psi_scan (4 ноды) --
+  {
+    id: "psi_sc1", name: "Пси-зрение", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Восприятие пси-аур живых существ", appearance: "Цветные ауры вокруг персонажей", gives: "Видеть здоровье и намерения" }
+  },
+  {
+    id: "psi_sc2", name: "Дальновидение", tree: "psi", level: 2,
+    deps: [{ id: "psi_sc1", type: "direct" }],
+    desc: { what: "Проецирование восприятия на расстояние", appearance: "Туманный образ удалённой локации", gives: "Разведка на 10 км без движения" }
+  },
+  {
+    id: "psi_sc3", name: "Темпоральное зрение", tree: "psi", level: 3,
+    deps: [{ id: "psi_sc2", type: "direct" }],
+    desc: { what: "Видение прошлого места или объекта", appearance: "Полупрозрачные образы прошлого", gives: "Узнать историю любого места или предмета" }
+  },
+  {
+    id: "psi_sc4", name: "Предвидение", tree: "psi", level: 4,
+    deps: [{ id: "psi_sc3", type: "direct" }],
+    desc: { what: "Предсказание событий на 1 ход вперёд", appearance: "Вспышки будущих событий", gives: "Уклонение от атак с 80% вероятностью" }
+  },
+
+  // -- psi_shield (4 ноды) --
+  {
+    id: "psi_sh1", name: "Пси-барьер", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Ментальный экран от пси-атак", appearance: "Золотистый купол вокруг персонажа", gives: "−50% урон от пси-атак" }
+  },
+  {
+    id: "psi_sh2", name: "Силовой щит", tree: "psi", level: 2,
+    deps: [{ id: "psi_sh1", type: "direct" }],
+    desc: { what: "Физический щит из кинетической пси-энергии", appearance: "Мерцающий голубой купол", gives: "Блок физических атак 200 HP" }
+  },
+  {
+    id: "psi_sh3", name: "Зеркало разума", tree: "psi", level: 3,
+    deps: [{ id: "psi_sh2", type: "direct" }],
+    desc: { what: "Отражение пси-атак обратно на источник", appearance: "Зеркальная поверхность купола", gives: "Возврат 100% пси-урона атакующему" }
+  },
+  {
+    id: "psi_sh4", name: "Абсолютный барьер", tree: "psi", level: 4,
+    deps: [{ id: "psi_sh3", type: "direct" }, { id: "psi_amp3", type: "direct" }],
+    desc: { what: "Непробиваемый пси-щит на 10 секунд", appearance: "Яркая белая сфера без теней", gives: "Полный иммунитет ко всему урону" }
+  },
+
+  // -- psi_dom (3 ноды) --
+  {
+    id: "psi_dom1", name: "Подчинение воли", tree: "psi", level: 2,
+    deps: [{ id: "psi_tele2", type: "direct" }],
+    desc: { what: "Полное замещение воли цели командами оператора", appearance: "Нить управления, невидимая для наблюдателей", gives: "Превратить врага в союзника на 3 хода" }
+  },
+  {
+    id: "psi_dom2", name: "Массовое подчинение", tree: "psi", level: 3,
+    deps: [{ id: "psi_dom1", type: "direct" }],
+    desc: { what: "Одновременный контроль до 10 целей", appearance: "Паутина нитей от оператора", gives: "Контроль отряда врагов" }
+  },
+  {
+    id: "psi_dom3", name: "Пси-порабощение", tree: "psi", level: 4,
+    deps: [{ id: "psi_dom2", type: "direct" }],
+    desc: { what: "Перманентное подчинение разума без поддержания концентрации", appearance: "Опустевший взгляд цели", gives: "Постоянный союзник из врага" }
+  },
+
+  // -- psi_dream (3 ноды) --
+  {
+    id: "psi_dr1", name: "Вторжение в сон", tree: "psi", level: 2,
+    deps: [{ id: "psi_tele1", type: "direct" }],
+    desc: { what: "Посещение сновидений спящей цели", appearance: "Туманный мир грёз с оранжевым оттенком", gives: "Внушение через сон" }
+  },
+  {
+    id: "psi_dr2", name: "Кошмар", tree: "psi", level: 3,
+    deps: [{ id: "psi_dr1", type: "direct" }],
+    desc: { what: "Создание ужасающих образов в разуме цели", appearance: "Тёмные тени и красные вспышки", gives: "Снижение морали врага до нуля" }
+  },
+  {
+    id: "psi_dr3", name: "Вечный сон", tree: "psi", level: 4,
+    deps: [{ id: "psi_dr2", type: "direct" }],
+    desc: { what: "Погружение цели в необратимую кому", appearance: "Цель замирает с улыбкой", gives: "Нейтрализация цели без убийства" }
+  },
+
+  // -- psi_project (3 ноды) --
+  {
+    id: "psi_ap1", name: "Эктопроекция", tree: "psi", level: 2,
+    deps: [{ id: "psi_sc2", type: "direct" }],
+    desc: { what: "Выход сознания из тела", appearance: "Призрачная форма оператора отделяется", gives: "Разведка без физического риска" }
+  },
+  {
+    id: "psi_ap2", name: "Астральный бой", tree: "psi", level: 3,
+    deps: [{ id: "psi_ap1", type: "direct" }],
+    desc: { what: "Нападение на врагов в астральном плане", appearance: "Призрачные атаки, невидимые для большинства", gives: "Атаки наносят урон сознанию, минуя броню" }
+  },
+  {
+    id: "psi_ap3", name: "Переселение разума", tree: "psi", level: 5,
+    deps: [{ id: "psi_ap2", type: "direct" }, { id: "psi_dom3", type: "direct" }],
+    desc: { what: "Перемещение сознания в другое тело", appearance: "Вспышка — оператор открывает глаза чужим взглядом", gives: "Захват тела любого существа" }
+  },
+
+  // -- psi_group (3 ноды) --
+  {
+    id: "psi_grp1", name: "Пси-связь", tree: "psi", level: 1,
+    deps: [{ id: "psi_base", type: "direct" }],
+    desc: { what: "Беспроводная ментальная коммуникация между союзниками", appearance: "Тонкие нити между соратниками", gives: "Мгновенная бесшумная связь" }
+  },
+  {
+    id: "psi_grp2", name: "Коллективный разум", tree: "psi", level: 3,
+    deps: [{ id: "psi_grp1", type: "direct" }, { id: "psi_amp2", type: "direct" }],
+    desc: { what: "Синхронизация опыта и навыков группы", appearance: "Единая пульсация группы", gives: "Все участники используют лучшие навыки отряда" }
+  },
+  {
+    id: "psi_grp3", name: "Ульей", tree: "psi", level: 5,
+    deps: [{ id: "psi_grp2", type: "direct" }],
+    desc: { what: "Полное слияние сознаний в единый супер-разум", appearance: "Отряд движется как один организм", gives: "Отряд как единица с суммарными характеристиками" }
+  },
+
+  // -- psi_weapon (4 ноды) --
+  {
+    id: "psi_wp1", name: "Пси-разряд", tree: "psi", level: 2,
+    deps: [{ id: "psi_amp1", type: "direct" }],
+    desc: { what: "Ментальный удар, вызывающий боль и дезориентацию", appearance: "Оранжевая волна, исходящая от оператора", gives: "150 урона, 3 хода дезориентации" }
+  },
+  {
+    id: "psi_wp2", name: "Пси-буря", tree: "psi", level: 3,
+    deps: [{ id: "psi_wp1", type: "direct" }],
+    desc: { what: "Массовый ментальный удар по области", appearance: "Буря из оранжевых волн", gives: "300 урона всем врагам в зоне 20м" }
+  },
+  {
+    id: "psi_wp3", name: "Ментальный взрыв", tree: "psi", level: 4,
+    deps: [{ id: "psi_wp2", type: "direct" }, { id: "psi_amp3", type: "direct" }],
+    desc: { what: "Уничтожение рассудка цели", appearance: "Вспышка белого света из глаз цели", gives: "Полная амнезия или гибель цели" }
+  },
+  {
+    id: "psi_wp4", name: "Психическая чума", tree: "psi", level: 5,
+    deps: [{ id: "psi_wp3", type: "direct" }],
+    desc: { what: "Распространяющееся ментальное заражение", appearance: "Цепная реакция безумия в толпе", gives: "Вирусный ментальный урон до 1000 целей" }
+  },
+
+  // ============================================================
+  // === ДЕРЕВО: ХРОНОТЕХНОЛОГИИ (66 нод) ===
+  // ============================================================
+
+  // -- chrono_core (4 ноды) --
+  {
+    id: "chrono_base", name: "Квантовые часы", tree: "chrono", level: 0, deps: [],
+    desc: { what: "Измерение времени на уровне квантовых флуктуаций", appearance: "Голографические числа с дрожанием", gives: "Открывает все хронотехнологии" }
+  },
+  {
+    id: "chrono_pulse1", name: "Временной импульс I", tree: "chrono", level: 1,
+    deps: [{ id: "chrono_base", type: "direct" }],
+    desc: { what: "Слабый локальный сдвиг темпорального поля", appearance: "Кратковременное замерзание частиц воздуха", gives: "Замедление объектов на 10%" }
+  },
+  {
+    id: "chrono_pulse2", name: "Временной импульс II", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_pulse1", type: "direct" }],
+    desc: { what: "Усиленный темпоральный сдвиг в зоне 5м", appearance: "Мерцающий пузырь времени", gives: "Замедление всего в зоне на 30%" }
+  },
+  {
+    id: "chrono_pulse3", name: "Темпоральный резонатор", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_pulse2", type: "direct" }],
+    desc: { what: "Устройство стабилизации темпоральных полей", appearance: "Вращающиеся кольца с голубым светом", gives: "Стабильный пузырь замедления 50м" }
+  },
+
+  // -- chrono_slow (4 ноды) --
+  {
+    id: "chrono_sl1", name: "Поле замедления", tree: "chrono", level: 1,
+    deps: [{ id: "chrono_base", type: "direct" }],
+    desc: { what: "Зона сниженного темпа для всего в радиусе", appearance: "Синеватая дымка над поверхностью", gives: "Враги в зоне −50% скорости" }
+  },
+  {
+    id: "chrono_sl2", name: "Личное замедление", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_sl1", type: "direct" }],
+    desc: { what: "Замедление одной выбранной цели", appearance: "Цель движется как в густом киселе", gives: "Одна цель −80% скорости на 5 ходов" }
+  },
+  {
+    id: "chrono_sl3", name: "Темпоральная клетка", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_sl2", type: "direct" }],
+    desc: { what: "Полная остановка цели в темпоральном пузыре", appearance: "Цель в янтарном пузыре", gives: "Заморозка цели на 3 хода" }
+  },
+  {
+    id: "chrono_sl4", name: "Массовое замедление", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_sl3", type: "direct" }, { id: "chrono_pulse3", type: "direct" }],
+    desc: { what: "Замедление всех врагов в радиусе 100м", appearance: "Гигантский синий купол", gives: "Все враги −70% скорости на 3 хода" }
+  },
+
+  // -- chrono_stop (3 ноды) --
+  {
+    id: "chrono_st1", name: "Миг заморозки", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_sl1", type: "direct" }],
+    desc: { what: "Полная остановка времени на 1 секунду", appearance: "Мгновенная заморозка всего кадра", gives: "Свободный ход без противников" }
+  },
+  {
+    id: "chrono_st2", name: "Остановка времени", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_st1", type: "direct" }],
+    desc: { what: "Полная остановка времени на 5 секунд", appearance: "Кристальная тишина мира", gives: "5 свободных ходов" }
+  },
+  {
+    id: "chrono_st3", name: "Темпоральный арест", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_st2", type: "direct" }],
+    desc: { what: "Постоянная остановка одного объекта вне времени", appearance: "Объект в стеклянной тюрьме", gives: "Консервация объекта навсегда" }
+  },
+
+  // -- chrono_accel (4 ноды) --
+  {
+    id: "chrono_ac1", name: "Личное ускорение", tree: "chrono", level: 1,
+    deps: [{ id: "chrono_base", type: "direct" }],
+    desc: { what: "Ускорение темпорального поля вокруг оператора", appearance: "Оператор оставляет размытый след", gives: "+50% скорость оператора" }
+  },
+  {
+    id: "chrono_ac2", name: "Темпо-спринт", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_ac1", type: "direct" }],
+    desc: { what: "Кратковременная экстремальная скорость", appearance: "Вспышка и мгновенное перемещение", gives: "Телепортация на 50м за 1 действие" }
+  },
+  {
+    id: "chrono_ac3", name: "Ускоренный отряд", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_ac2", type: "direct" }],
+    desc: { what: "Ускорение всего союзного отряда", appearance: "Золотистые следы за всеми союзниками", gives: "Отряд +100% скорости на 3 хода" }
+  },
+  {
+    id: "chrono_ac4", name: "Хроно-рывок", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_ac3", type: "direct" }],
+    desc: { what: "Прыжок в ближайшее будущее", appearance: "Оператор исчезает и появляется в другом месте", gives: "Мгновенное перемещение в любую точку на карте" }
+  },
+
+  // -- chrono_reverse (3 ноды) --
+  {
+    id: "chrono_rv1", name: "Откат урона", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_pulse2", type: "direct" }],
+    desc: { what: "Отматывание состояния объекта на 1 ход", appearance: "Раны исчезают в обратном порядке", gives: "Полное восстановление юнита как 1 ход назад" }
+  },
+  {
+    id: "chrono_rv2", name: "Темпоральный откат", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_rv1", type: "direct" }],
+    desc: { what: "Отматывание состояния зоны на 3 хода", appearance: "Область мерцает и перестраивается", gives: "Отменить 3 последних события в зоне" }
+  },
+  {
+    id: "chrono_rv3", name: "Парадокс времени", tree: "chrono", level: 5,
+    deps: [{ id: "chrono_rv2", type: "direct" }, { id: "chrono_br2", type: "direct" }],
+    desc: { what: "Полная отмотка временной линии на 10 ходов", appearance: "Всё мигает и перестраивается как будто ничего не было", gives: "Отменить последние 10 ходов битвы" }
+  },
+
+  // -- chrono_branch (3 ноды) --
+  {
+    id: "chrono_br1", name: "Точка ветвления", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_pulse2", type: "direct" }],
+    desc: { what: "Создание точки сохранения в потоке времени", appearance: "Зелёная метка в пространстве", gives: "Точка возврата для следующих 5 ходов" }
+  },
+  {
+    id: "chrono_br2", name: "Параллельный исход", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_br1", type: "direct" }],
+    desc: { what: "Реализация альтернативного варианта событий", appearance: "Мерцание мира и замена исхода", gives: "Переиграть одно неудачное событие" }
+  },
+  {
+    id: "chrono_br3", name: "Коллапс реальностей", tree: "chrono", level: 5,
+    deps: [{ id: "chrono_br2", type: "direct" }],
+    desc: { what: "Объединение двух временных линий", appearance: "Двойные образы сливаются в одно", gives: "Импортировать технологии из параллельной линии" }
+  },
+
+  // -- chrono_portal (3 ноды) --
+  {
+    id: "chrono_pt1", name: "Темпоральное окно", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_ac1", type: "direct" }],
+    desc: { what: "Небольшое окно для наблюдения в прошлое", appearance: "Прямоугольный портал с дрожащим изображением", gives: "Разведка прошлого на 10 ходов назад" }
+  },
+  {
+    id: "chrono_pt2", name: "Портал прошлого", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_pt1", type: "direct" }],
+    desc: { what: "Врата для физического перемещения в прошлое", appearance: "Мерцающий овал с изображением прошлого", gives: "Отправка разведчика в прошлое" }
+  },
+  {
+    id: "chrono_pt3", name: "Хроно-мост", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_pt2", type: "direct" }],
+    desc: { what: "Стабильный мост между двумя эпохами", appearance: "Постоянно открытый портал с двух сторон", gives: "Переброска ресурсов между эпохами" }
+  },
+
+  // -- chrono_shield (3 ноды) --
+  {
+    id: "chrono_hs1", name: "Темпоральный доспех", tree: "chrono", level: 1,
+    deps: [{ id: "chrono_base", type: "direct" }],
+    desc: { what: "Броня, ускользающая от ударов во времени", appearance: "Размытый контур тела оператора", gives: "20% шанс уклонения" }
+  },
+  {
+    id: "chrono_hs2", name: "Хроно-зеркало", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_hs1", type: "direct" }],
+    desc: { what: "Отражение атак назад во времени", appearance: "Атаки растворяются и появляются у атакующего", gives: "30% отражение урона" }
+  },
+  {
+    id: "chrono_hs3", name: "Темпоральная неуязвимость", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_hs2", type: "direct" }, { id: "chrono_st2", type: "direct" }],
+    desc: { what: "Вынос персонажа из потока времени на 1 ход", appearance: "Персонаж становится полупрозрачным", gives: "Полная неуязвимость на 1 ход" }
+  },
+
+  // -- chrono_spy (3 ноды) --
+  {
+    id: "chrono_sp1", name: "Разведка прошлого", tree: "chrono", level: 1,
+    deps: [{ id: "chrono_base", type: "direct" }],
+    desc: { what: "Видение недавних событий в точке", appearance: "Призрачные образы прошлых событий", gives: "Разведка активности врага за 5 ходов" }
+  },
+  {
+    id: "chrono_sp2", name: "Темпоральный соглядатай", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_sp1", type: "direct" }, { id: "chrono_pt1", type: "direct" }],
+    desc: { what: "Агент наблюдения в прошлом", appearance: "Невидимый призрак в прошлых событиях", gives: "Знание планов врага на 10 ходов вперёд" }
+  },
+  {
+    id: "chrono_sp3", name: "Темпоральный саботаж", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_sp2", type: "direct" }],
+    desc: { what: "Вмешательство в прошлое для срыва планов врага", appearance: "Изменение событий без следов", gives: "Уничтожение одного проекта врага ретроактивно" }
+  },
+
+  // -- chrono_bomb (4 ноды) --
+  {
+    id: "chrono_bm1", name: "Темпоральная граната", tree: "chrono", level: 2,
+    deps: [{ id: "chrono_sl2", type: "direct" }],
+    desc: { what: "Взрыв создающий зону экстремального замедления", appearance: "Синий взрыв с зоной заморозки", gives: "Замедление всего в радиусе 10м на 5 ходов" }
+  },
+  {
+    id: "chrono_bm2", name: "Хроно-мина", tree: "chrono", level: 3,
+    deps: [{ id: "chrono_bm1", type: "direct" }],
+    desc: { what: "Мина, срабатывающая с задержкой во времени", appearance: "Невидимая мина, взрывающаяся в прошлом", gives: "Урон в прошлом — ретроактивное уничтожение цели" }
+  },
+  {
+    id: "chrono_bm3", name: "Темпоральная бомба", tree: "chrono", level: 4,
+    deps: [{ id: "chrono_bm2", type: "direct" }],
+    desc: { what: "Бомба, создающая постоянный темпоральный разлом", appearance: "Постоянно расширяющийся синий разрыв", gives: "Зона запрета времени радиусом 1 км" }
+  },
+  {
+    id: "chrono_bm4", name: "Хроноцид", tree: "chrono", level: 5,
+    deps: [{ id: "chrono_bm3", type: "direct" }, { id: "chrono_rv2", type: "cosvennaya" }],
+    desc: { what: "Удаление цели из временного потока навсегда", appearance: "Цель исчезает без следа, будто никогда не существовала", gives: "Стирание юнита из истории" }
+  }
 ];
+
+// ============================================================
+// СТАТИСТИКА
+// ============================================================
+// TREES:     3 (nano, psi, chrono)
+// SUBTREES:  30 (по 10 на дерево)
+// TECHS:    200 нод
+//   nano:    67 нод
+//   psi:     67 нод
+//   chrono:  66 нод
+// Все ноды имеют путь до базовой технологии своего дерева
+// ============================================================
+
+// Экспорт для использования в проекте:
+// Скопируйте объекты TREES_TEST, SUBTREES_TEST, TECHS_TEST
+// в соответствующие TREES, SUBTREES, TECHS вашего файла

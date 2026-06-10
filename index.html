@@ -1093,7 +1093,6 @@ function initNodes() {
   const treeKeys = Object.keys(TREES);
   const treeCount = treeKeys.length;
 
-  // Группируем узлы по (tree, level)
   const grouped = {};
   treeKeys.forEach(k => (grouped[k] = {}));
   TECHS.forEach(t => {
@@ -1101,10 +1100,8 @@ function initNodes() {
     grouped[t.tree][t.level].push(t);
   });
 
-  // Максимальный уровень по всем деревьям — для нормировки радиусов
   const maxLevel = Math.max(...TECHS.map(t => t.level), 0);
 
-  // Максимальное число узлов на уровне в любом дереве — для масштабирования сектора
   let maxPerLevel = 1;
   treeKeys.forEach(k => {
     Object.values(grouped[k]).forEach(arr => {
@@ -1112,20 +1109,15 @@ function initNodes() {
     });
   });
 
-  // Радиальное расположение: расстояние между уровнями и база
-  const LEVEL_STEP   = 140;   // расстояние между уровнями (было 100)
-  const LEVEL_BASE   = 110;   // радиус нулевого уровня (было 70)
-  const NODE_SPACING = 40;    // угловой зазор между узлами (в пикселях по дуге)
+  const LEVEL_STEP   = 140;
+  const LEVEL_BASE   = 110;
+  const NODE_SPACING = 40;
 
-  // Радиус орбиты центров деревьев — должен быть достаточно большим,
-  // чтобы "кроны" деревьев не пересекались.
-  // Крона дерева ≈ maxLevel * LEVEL_STEP + LEVEL_BASE
   const crownRadius = LEVEL_BASE + maxLevel * LEVEL_STEP;
-  const treeOrbitRadius = crownRadius * 1.6 + 100; // с запасом между деревьями
+  const treeOrbitRadius = crownRadius * 1.6 + 100;
 
-  // Каждому дереву — свой угловой сектор [start, end]
   const sectorSize = (Math.PI * 2) / treeCount;
-  const sectorPad  = 0.08; // небольшой зазор между секторами (в радианах)
+  const sectorPad  = 0.08;
 
   const treeCenters = {};
   const treeSectors = {};
@@ -1142,45 +1134,271 @@ function initNodes() {
     };
   });
 
-  // Раскладываем узлы
+  // ========== МИНИМИЗАЦИЯ ПЕРЕСЕЧЕНИЙ РЁБЕР ==========
+
+  // Карты для быстрого поиска
+  const techMap = {};
+  TECHS.forEach(t => { techMap[t.id] = t; });
+  
+  const childrenMap = {};
   TECHS.forEach(t => {
-    const sector  = treeSectors[t.tree];
-    const center  = treeCenters[t.tree];
-    const levelNodes = grouped[t.tree][t.level] || [];
-    const idx   = levelNodes.indexOf(t);
-    const count = levelNodes.length;
+    t.deps.forEach(d => {
+      if (!childrenMap[d.id]) childrenMap[d.id] = [];
+      childrenMap[d.id].push(t);
+    });
+  });
 
-    // Радиус от центра дерева — зависит от уровня
-    const r = LEVEL_BASE + t.level * LEVEL_STEP;
+  // Список рёбер
+  const edgeList = [];
+  TECHS.forEach(t => {
+    t.deps.forEach(d => {
+      edgeList.push({ from: d.id, to: t.id });
+    });
+  });
 
-    // Угол внутри сектора: равномерно распределяем все узлы уровня
-    // по доступному диапазону [sector.start, sector.end]
+  // Начальный порядок (копия grouped)
+  const ordering = {};
+  treeKeys.forEach(tree => {
+    ordering[tree] = {};
+    Object.keys(grouped[tree]).forEach(level => {
+      ordering[tree][level] = [...grouped[tree][level]];
+    });
+  });
+
+  // Вычисление позиции узла по его индексу в порядке
+  function getNodePos(tech, orderIdx, levelCount) {
+    const sector = treeSectors[tech.tree];
+    const center = treeCenters[tech.tree];
+    const r = LEVEL_BASE + tech.level * LEVEL_STEP;
+    const jitterR = (Math.sin(tech.id.charCodeAt(0) + tech.level) * 0.5 + 0.5) * 18;
+    const radius = r + jitterR;
     let angle;
-    if (count === 1) {
-      angle = sector.center; // одиночный узел — ровно по центру сектора
+    if (levelCount === 1) angle = sector.center;
+    else {
+      const tp = orderIdx / (levelCount - 1);
+      angle = sector.start + tp * (sector.end - sector.start);
+    }
+    return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+  }
+
+  function computeAllPos(ord) {
+    const pos = {};
+    treeKeys.forEach(tree => {
+      Object.keys(ord[tree]).forEach(level => {
+        const ln = ord[tree][level];
+        ln.forEach((t, idx) => { pos[t.id] = getNodePos(t, idx, ln.length); });
+      });
+    });
+    return pos;
+  }
+
+  // --- Фаза 1: Метод барицентров ---
+  for (let iter = 0; iter < 24; iter++) {
+    const isDown = (iter % 2 === 0);
+    
+    if (isDown) {
+      for (let level = 1; level <= maxLevel; level++) {
+        treeKeys.forEach(tree => {
+          const sector = treeSectors[tree];
+          const center = treeCenters[tree];
+          const ln = ordering[tree][level];
+          if (!ln || ln.length <= 1) return;
+          
+          const bcs = ln.map(n => {
+            const angles = [];
+            n.deps.forEach(d => {
+              const dep = techMap[d.id];
+              if (!dep) return;
+              if (dep.tree === tree) {
+                const dln = ordering[tree][dep.level] || [];
+                const didx = dln.findIndex(t => t.id === d.id);
+                if (didx >= 0 && dln.length > 0) {
+                  const tp = dln.length === 1 ? 0.5 : didx / (dln.length - 1);
+                  angles.push(sector.start + tp * (sector.end - sector.start));
+                }
+              } else {
+                const dc = treeCenters[dep.tree];
+                angles.push(Math.atan2(dc.y - center.y, dc.x - center.x));
+              }
+            });
+            if (angles.length === 0) return { node: n, bc: sector.center };
+            let sc = 0, ss = 0;
+            angles.forEach(a => { sc += Math.cos(a); ss += Math.sin(a); });
+            return { node: n, bc: Math.atan2(ss, sc) };
+          });
+          
+          bcs.sort((a, b) => a.bc - b.bc);
+          ordering[tree][level] = bcs.map(b => b.node);
+        });
+      }
     } else {
-      const tParam = idx / (count - 1); // 0..1
+      for (let level = maxLevel - 1; level >= 0; level--) {
+        treeKeys.forEach(tree => {
+          const sector = treeSectors[tree];
+          const center = treeCenters[tree];
+          const ln = ordering[tree][level];
+          if (!ln || ln.length <= 1) return;
+          
+          const bcs = ln.map(n => {
+            const angles = [];
+            const children = childrenMap[n.id] || [];
+            children.forEach(t => {
+              if (t.tree === tree) {
+                const cln = ordering[tree][t.level] || [];
+                const cidx = cln.findIndex(c => c.id === t.id);
+                if (cidx >= 0 && cln.length > 0) {
+                  const tp = cln.length === 1 ? 0.5 : cidx / (cln.length - 1);
+                  angles.push(sector.start + tp * (sector.end - sector.start));
+                }
+              } else {
+                const cc = treeCenters[t.tree];
+                angles.push(Math.atan2(cc.y - center.y, cc.x - center.x));
+              }
+            });
+            if (angles.length === 0) return { node: n, bc: sector.center };
+            let sc = 0, ss = 0;
+            angles.forEach(a => { sc += Math.cos(a); ss += Math.sin(a); });
+            return { node: n, bc: Math.atan2(ss, sc) };
+          });
+          
+          bcs.sort((a, b) => a.bc - b.bc);
+          ordering[tree][level] = bcs.map(b => b.node);
+        });
+      }
+    }
+  }
+
+  // --- Фаза 2: Локальный поиск (перестановка соседних узлов) ---
+  function cross2d(o, a, b) {
+    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  }
+  function segInt(p1, q1, p2, q2) {
+    const d1 = cross2d(p2, q2, p1), d2 = cross2d(p2, q2, q1);
+    const d3 = cross2d(p1, q1, p2), d4 = cross2d(p1, q1, q2);
+    const eps = 1e-9;
+    if (((d1 > eps && d2 < -eps) || (d1 < -eps && d2 > eps)) &&
+        ((d3 > eps && d4 < -eps) || (d3 < -eps && d4 > eps))) return true;
+    return false;
+  }
+  
+  function countCross(pos) {
+    let c = 0;
+    for (let i = 0; i < edgeList.length; i++) {
+      const e1 = edgeList[i];
+      const p1 = pos[e1.from], p2 = pos[e1.to];
+      if (!p1 || !p2) continue;
+      for (let j = i + 1; j < edgeList.length; j++) {
+        const e2 = edgeList[j];
+        if (e1.from === e2.from || e1.from === e2.to || e1.to === e2.from || e1.to === e2.to) continue;
+        const p3 = pos[e2.from], p4 = pos[e2.to];
+        if (!p3 || !p4) continue;
+        if (segInt(p1, p2, p3, p4)) c++;
+      }
+    }
+    return c;
+  }
+  
+  // Инкрементальное вычисление изменения числа пересечений при交换 двух узлов
+  function deltaSwap(pos, nA, nB, npA, npB) {
+    const aff = [];
+    edgeList.forEach((e, idx) => {
+      if (e.from === nA.id || e.to === nA.id || e.from === nB.id || e.to === nB.id) aff.push(idx);
+    });
+    let d = 0;
+    const chk = new Set();
+    for (const i of aff) {
+      const e = edgeList[i];
+      const eNF = e.from === nA.id ? npA : e.from === nB.id ? npB : pos[e.from];
+      const eNT = e.to === nA.id ? npA : e.to === nB.id ? npB : pos[e.to];
+      const eOF = e.from === nA.id ? pos[nA.id] : e.from === nB.id ? pos[nB.id] : pos[e.from];
+      const eOT = e.to === nA.id ? pos[nA.id] : e.to === nB.id ? pos[nB.id] : pos[e.to];
+      if (!eNF || !eNT || !eOF || !eOT) continue;
+      
+      for (let j = 0; j < edgeList.length; j++) {
+        if (i === j) continue;
+        const f = edgeList[j];
+        if (e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue;
+        const pk = i < j ? i * edgeList.length + j : j * edgeList.length + i;
+        if (chk.has(pk)) continue;
+        chk.add(pk);
+        
+        const fNF = f.from === nA.id ? npA : f.from === nB.id ? npB : pos[f.from];
+        const fNT = f.to === nA.id ? npA : f.to === nB.id ? npB : pos[f.to];
+        const fOF = f.from === nA.id ? pos[nA.id] : f.from === nB.id ? pos[nB.id] : pos[f.from];
+        const fOT = f.to === nA.id ? pos[nA.id] : f.to === nB.id ? pos[nB.id] : pos[f.to];
+        if (!fNF || !fNT || !fOF || !fOT) continue;
+        
+        const ni = segInt(eNF, eNT, fNF, fNT);
+        const oi = segInt(eOF, eOT, fOF, fOT);
+        if (ni && !oi) d++;
+        else if (!ni && oi) d--;
+      }
+    }
+    return d;
+  }
+  
+  let pos = computeAllPos(ordering);
+  let curC = countCross(pos);
+  let improved = true, iter2 = 0;
+  
+  while (improved && iter2 < 20) {
+    improved = false;
+    iter2++;
+    const fwd = (iter2 % 2 === 1);
+    
+    treeKeys.forEach(tree => {
+      const levels = Object.keys(ordering[tree]);
+      if (!fwd) levels.reverse();
+      levels.forEach(level => {
+        const ln = ordering[tree][level];
+        if (ln.length <= 1) return;
+        const indices = fwd ? 
+          Array.from({length: ln.length - 1}, (_, i) => i) :
+          Array.from({length: ln.length - 1}, (_, i) => ln.length - 2 - i);
+        
+        for (const i of indices) {
+          const nA = ln[i], nB = ln[i + 1];
+          const npA = getNodePos(nA, i + 1, ln.length);
+          const npB = getNodePos(nB, i, ln.length);
+          const d = deltaSwap(pos, nA, nB, npA, npB);
+          if (d < 0) {
+            ln[i] = nB; ln[i + 1] = nA;
+            pos[nA.id] = npA; pos[nB.id] = npB;
+            curC += d;
+            improved = true;
+          }
+        }
+      });
+    });
+  }
+
+  // ========== КОНЕЦ МИНИМИЗАЦИИ ПЕРЕСЕЧЕНИЙ ==========
+
+  // Размещение узлов с использованием оптимизированного порядка
+  TECHS.forEach(t => {
+    const ln = ordering[t.tree][t.level];
+    const idx = ln.indexOf(t);
+    const count = ln.length;
+    const sector = treeSectors[t.tree];
+    const center = treeCenters[t.tree];
+
+    const r = LEVEL_BASE + t.level * LEVEL_STEP;
+    let angle;
+    if (count === 1) angle = sector.center;
+    else {
+      const tParam = idx / (count - 1);
       angle = sector.start + tParam * (sector.end - sector.start);
     }
 
-    // Небольшой радиальный джиттер по уровню, чтобы узлы одного уровня
-    // не стояли на одной окружности (иначе рёбра выглядят как спицы)
     const jitterR = (Math.sin(t.id.charCodeAt(0) + t.level) * 0.5 + 0.5) * 18;
-
     const x = center.x + Math.cos(angle) * (r + jitterR);
     const y = center.y + Math.sin(angle) * (r + jitterR);
 
     const node = {
-      id: t.id,
-      x, y,
-      vx: 0, vy: 0,
-      tree: t.tree,
-      level: t.level,
-      scale: 0,
-      targetScale: 1,
-      displayScale: 0,
-      pulsePhase: 0,
-      pulseActive: false,
+      id: t.id, x, y, vx: 0, vy: 0,
+      tree: t.tree, level: t.level,
+      scale: 0, targetScale: 1, displayScale: 0,
+      pulsePhase: 0, pulseActive: false,
       appearDelay: t.level * 0.5 + Math.random() * 0.25,
       _hovered: false,
     };
@@ -1188,33 +1406,22 @@ function initNodes() {
     nodeMap.set(t.id, node);
   });
 
-  // Добавляем меж-деревьевые связи в физику
   TECHS.forEach(t => {
     t.deps.forEach(d => {
-      const depTech = TECHS.find(tech => tech.id === d.id);
+      const depTech = techMap[d.id];
       const isCrossTree = depTech && depTech.tree !== t.tree;
-      
-      edges.push({ 
-        from: d.id, 
-        to: t.id, 
-        type: d.type,
-        isCrossTree: isCrossTree || false
-      });
+      edges.push({ from: d.id, to: t.id, type: d.type, isCrossTree: isCrossTree || false });
     });
   });
 
   const animStart = performance.now();
-
   physicsWorker.postMessage({
     type: 'init',
     nodes: nodes.map(n => ({ ...n })),
     edges: edges.map(e => ({ ...e })),
-    treeKeys,
-    treeCenters,
-    animStartTime: animStart,
+    treeKeys, treeCenters, animStartTime: animStart,
   });
 }
-
 // ============================================================
 // СОБЫТИЯ МЫШИ (оптимизировано)
 // ============================================================
