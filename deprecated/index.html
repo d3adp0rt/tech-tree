@@ -206,37 +206,6 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
-
-  /* ── Отмена исследования ── */
-  .research-btn-row {
-    display: flex; gap: 8px; align-items: stretch; margin-top: 18px;
-  }
-  .research-btn-row .research-btn {
-    margin-top: 0; flex: 1;
-  }
-  .cancel-research-trigger {
-    width: 42px; height: 42px; flex-shrink: 0;
-    border: none; border-radius: 12px; cursor: pointer;
-    background: rgba(231,76,60,0.18); border: 1px solid rgba(231,76,60,0.35);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; transition: all 0.18s; color: #e74c3c;
-    margin-top: 20px;
-  }
-  .cancel-research-trigger:hover {
-    background: rgba(231,76,60,0.35); transform: scale(1.07);
-  }
-  .cancel-confirm-btn {
-    display: none; width: 100%; padding: 13px; margin-top: 8px;
-    border: none; border-radius: 12px; font-size: 14px; font-weight: 700;
-    cursor: pointer; letter-spacing: 0.4px; transition: all 0.22s;
-    background: linear-gradient(135deg, #c0392b, #96281b);
-    color: #fff; box-shadow: 0 4px 16px rgba(192,57,43,0.35);
-  }
-  .cancel-confirm-btn:hover {
-    transform: translateY(-2px); box-shadow: 0 8px 24px rgba(192,57,43,0.5);
-  }
-  .cancel-confirm-btn.visible { display: block; }
-
 </style>
 </head>
 <body>
@@ -287,11 +256,7 @@
       <div class="missing-title">Не хватает</div>
       <ul class="missing-list" id="tpMissingList"></ul>
     </div>
-    <div class="research-btn-row" id="tpResearchRow">
-      <button class="research-btn" id="tpResearchBtn">Исследовать</button>
-      <button class="cancel-research-trigger" id="tpCancelTrigger" style="display:none" title="Отменить исследование">✕</button>
-    </div>
-    <button class="cancel-confirm-btn" id="tpCancelConfirmBtn">Точно отменить?</button>
+    <button class="research-btn" id="tpResearchBtn">Исследовать</button>
   </div>
 </div>
 
@@ -523,22 +488,6 @@ self.onmessage = function(e) {
       // Start pulse
       const rn = nodeMap.get(msg.id);
       if (rn) { rn.pulseActive = true; rn.pulsePhase = 0; }
-      break;
-    case 'unresearch':
-      // Apply reverse impulse — neighbors are attracted toward this node
-      for (const e of edges) {
-        if (e.from === msg.id || e.to === msg.id) {
-          const otherId = e.from === msg.id ? e.to : e.from;
-          const other = nodeMap.get(otherId);
-          const src = nodeMap.get(msg.id);
-          if (other && src) {
-            const dx = src.x - other.x, dy = src.y - other.y;
-            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-            other.vx += (dx/dist) * 30;
-            other.vy += (dy/dist) * 30;
-          }
-        }
-      }
       break;
     case 'importResearch':
       // Mark pulse on imported researched nodes
@@ -1368,34 +1317,21 @@ function openTechPanel(node) {
   }
 
   const btn = document.getElementById('tpResearchBtn');
-  const cancelTrigger = document.getElementById('tpCancelTrigger');
-  const cancelConfirmBtn = document.getElementById('tpCancelConfirmBtn');
   const available = isNodeAvailable(node);
   const done = researched.has(node.id);
-
-  // Reset confirm button whenever panel is (re)opened
-  cancelConfirmBtn.classList.remove('visible');
 
   if (done) {
     btn.textContent = '✓ Исследовано';
     btn.className = 'research-btn done';
     btn.onclick = null;
-    cancelTrigger.style.display = 'flex';
-    cancelTrigger.onclick = () => {
-      const showing = cancelConfirmBtn.classList.contains('visible');
-      cancelConfirmBtn.classList.toggle('visible', !showing);
-    };
-    cancelConfirmBtn.onclick = () => unresearchTech(node);
   } else if (available) {
     btn.textContent = 'Исследовать';
     btn.className = 'research-btn available';
     btn.onclick = () => researchTech(node);
-    cancelTrigger.style.display = 'none';
   } else {
     btn.textContent = 'Недоступно';
     btn.className = 'research-btn locked';
     btn.onclick = null;
-    cancelTrigger.style.display = 'none';
   }
 
   const panel = document.getElementById('techPanel');
@@ -1408,9 +1344,6 @@ function openTechPanel(node) {
 function closeTechPanel() {
   const panel = document.getElementById('techPanel');
   panel.classList.remove('show');
-  // Hide confirm button when panel closes
-  const cancelConfirmBtn = document.getElementById('tpCancelConfirmBtn');
-  if (cancelConfirmBtn) cancelConfirmBtn.classList.remove('visible');
   setTimeout(() => { if (!panel.classList.contains('show')) panel.style.display = 'none'; }, 300);
   selectedNode = null;
 }
@@ -1422,19 +1355,6 @@ function researchTech(node) {
 
   // Tell Worker to apply impulse + start pulse
   physicsWorker.postMessage({ type: 'research', id: node.id });
-
-  openTechPanel(node);
-}
-
-function unresearchTech(node) {
-  researched.delete(node.id);
-
-  // Tell Worker to apply reverse impulse (neighbors attracted back)
-  physicsWorker.postMessage({ type: 'unresearch', id: node.id });
-
-  // Hide confirm button immediately, then re-render panel
-  const cancelConfirmBtn = document.getElementById('tpCancelConfirmBtn');
-  if (cancelConfirmBtn) cancelConfirmBtn.classList.remove('visible');
 
   openTechPanel(node);
 }
